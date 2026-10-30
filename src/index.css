@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/*
+  Design tokens pulled from the Figma file.
+  Tailwind v4 turns each --color-* / --font-* into a utility class,
+  e.g. --color-cream → bg-cream, text-cream, border-cream.
+*/
+@theme {
+  --color-cream: #f9f5ea;
+  --color-ink: #0f1028;
+  --color-ink-soft: #0f132c;
+
+  /* Sky gradient stops (landing + history screens) */
+  --color-sky-blue: #8fb1be;
+  --color-sky-sage: #97beb5;
+  --color-sky-gold: #fbbb4b;
+  --color-sky-orange: #e87636;
+
+  /* One color per character (matches each "select" button in Figma) */
+  --color-protector: #fcc560;
+  --color-recreationist: #f6b29f;
+  --color-environmentalist: #a0cbad;
+  --color-citizen: #8fb1be;
+  --color-organizer: #f3bfd6;
+  --color-educator: #a9b0ff;
+
+  --font-mono: "Courier Prime", ui-monospace, monospace;
+  --font-script: "Boucherie Cursive", "Dancing Script", cursive;
+
+  /* Character card pop-in → use with the class "animate-card-in" */
+  --animate-card-in: card-in 250ms ease-out;
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+/* If you add the Boucherie Cursive font file to public/fonts, this picks it up. */
+@font-face {
+  font-family: "Boucherie Cursive";
+  src: url("/fonts/BoucherieCursive.woff2") format("woff2");
+  font-display: swap;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-mono);
+  color: var(--color-ink);
+  background: var(--color-cream);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The sunset gradient from the Figma "background" layer */
+.bg-sky {
+  background-image: linear-gradient(
+    180deg,
+    var(--color-sky-blue) 0%,
+    var(--color-sky-sage) 21%,
+    var(--color-sky-gold) 77%,
+    var(--color-sky-orange) 100%
+  );
+}
