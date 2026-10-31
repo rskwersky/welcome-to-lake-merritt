@@ -12,11 +12,15 @@ type ChooseLengthProps = {
 export function ChooseLength({ onLong, onShort }: ChooseLengthProps) {
   return (
     <Stage className="bg-sky">
-      <div className="absolute inset-x-0 top-[290px] flex flex-col items-center gap-[29px]">
+      <div className="absolute inset-x-0 top-[334px] flex flex-col items-center gap-[29px]">
         <Postcard flipped />
         <div className="flex gap-[26px]">
-          <Button onClick={onLong}>long story</Button>
-          <Button onClick={onShort}>long story short</Button>
+          <Button width="hug" onClick={onLong}>
+            long story
+          </Button>
+          <Button width="hug" onClick={onShort}>
+            long story short
+          </Button>
         </div>
       </div>
     </Stage>

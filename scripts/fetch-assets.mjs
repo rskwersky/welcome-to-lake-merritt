@@ -1,12 +1,22 @@
 // Downloads the game's images from the Figma file into public/assets.
 // Run once after cloning:   npm run fetch-assets
 //
+// Every asset is an SVG export of a Figma node. SVG (instead of PNG) because:
+//  • vector art (the lantern, the manual, all the text) stays sharp at any size;
+//  • raster art (the gem, the cards…) is embedded at its full original resolution,
+//    with the exact crop, rounded corners, shadows, and transparency from Figma.
+//
+// Figma's export service draws things that aren't part of the node: a dark
+// #1E1E1E rectangle (the color of the Figma canvas) behind it, the purple dashed
+// outline of the component set (for variants), and, for a node nested inside a
+// screen, the screen's own background rectangles. This script strips them,
+// which is what makes the backgrounds transparent.
+//
 // The URLs below are temporary Figma export links (they expire about 7 days
-// after they were made, around Nov 6, 2026). If they've expired, ask Claude
+// after they were made, around Nov 7, 2026). If they've expired, ask Claude
 // Code (with the Figma MCP connected) to "re-export the assets listed in
-// scripts/fetch-assets.mjs at 2x PNG and update the URLs" — each entry lists
-// the Figma node it came from. Or export them from Figma by hand at 2x and save
-// them with the same file names.
+// scripts/fetch-assets.mjs as SVG and update the URLs". Each entry lists the
+// Figma node it came from.
 //
 // Figma file: https://www.figma.com/design/ngmTVvmsAQ59uJWXg4cbC4/Merritt-Game
 
@@ -18,35 +28,64 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'asse
 const base = 'https://www.figma.com/api/mcp/asset/'
 
 const assets = [
-  // Postcard (game-card instances on screens 01 and 02, exported with their rotation)
-  { file: 'postcard/front.png', node: '1:1059', id: '358df503-be89-4c5f-ae27-2a26ea24ec15' },
-  { file: 'postcard/back.png', node: '1:1078', id: '52ae5304-51a8-4d50-ac0e-9d49f1d35a13' },
+  // Postcard. Front = game-card side=front. Back = the instance on screen 04,
+  // because the screens override the fact text ("Oakland, California").
+  { file: 'postcard/front.svg', node: '1:994', id: 'a9fdac2d-97e6-4ea0-8d4f-dd100fbe785d' },
+  { file: 'postcard/back.svg', node: '9:214', id: '6020b4fc-13ee-4d06-9f46-a4700d4e121a', keepFrom: 'fact-card' },
+
+  // "Who owns Lake Merritt?" title, with the Boucherie Cursive letters as shapes
+  { file: 'history/title.svg', node: '9:249', id: '75ccd826-d259-4bd0-8732-bfc5dc2cda0e', keepFrom: 'history-title' },
 
   // Character icons (state=default)
-  { file: 'icons/gem.png', node: '1:689', id: '44661682-df34-44cb-900e-c8f45fbfcdc7' },
-  { file: 'icons/saxophone.png', node: '1:434', id: '0dc58552-4afc-4eb4-a165-5103615dca4a' },
-  { file: 'icons/lantern.png', node: '2:1292', id: '1b736578-30cb-42fa-a2f0-4b1028fca91e' },
-  { file: 'icons/olive.png', node: '2:1363', id: '7105c86f-f268-47eb-bd28-fe0858fcc901' },
-  { file: 'icons/house.png', node: '2:1373', id: 'b3344399-36e2-4e24-b268-1e4d524a9880' },
-  { file: 'icons/manual.png', node: '2:1417', id: 'c2c85e51-0623-4cc3-b988-7beff60a4db1' },
+  { file: 'icons/gem.svg', node: '1:689', id: '9aa29101-e006-46e9-a739-3cd9c151cf24' },
+  { file: 'icons/saxophone.svg', node: '1:434', id: 'ec8eac4d-2580-41af-a921-738278e88b7f' },
+  { file: 'icons/lantern.svg', node: '2:1292', id: '5d75a30a-e523-4b9b-86db-087e4cd6334f' },
+  { file: 'icons/olive.svg', node: '2:1363', id: 'b4dc9162-e73f-4c1f-8b77-8ac17f4a7eca' },
+  { file: 'icons/house.svg', node: '2:1373', id: 'aa36319f-b887-477d-a0cb-cf39262d7cfe' },
+  { file: 'icons/manual.svg', node: '2:1417', id: '51bd6812-78ab-46c2-ac4d-14de5ae0b91c' },
 
   // Character cards (view=blank — the text is added in code)
-  { file: 'cards/protector.png', node: '1:872', id: '7bc03196-6da0-4187-8c2e-6101bcc0d3f0' },
-  { file: 'cards/recreationist.png', node: '1:900', id: 'b62d5324-3e12-411f-9392-17bac7cc6113' },
-  { file: 'cards/environmentalist.png', node: '21:1030', id: 'f0d3d0e8-c210-4e98-978a-a64d7e9d7782' },
-  { file: 'cards/citizen.png', node: '21:1058', id: '3ccd7848-38c1-4d6f-9fa9-46a1666043ea' },
-  { file: 'cards/organizer.png', node: '21:2174', id: 'e718ef79-1bc9-47e7-b27b-626f55360f8d' },
-  { file: 'cards/educator.png', node: '21:1089', id: 'a3abe8a2-23e4-4a88-a845-58b01b2f3955' },
+  { file: 'cards/protector.svg', node: '1:872', id: '27c01a96-b72f-444d-b71c-ccdd4569ac4e' },
+  { file: 'cards/recreationist.svg', node: '1:900', id: '68cb2474-2d2e-40f5-8deb-1b7d4e0abbc0' },
+  { file: 'cards/environmentalist.svg', node: '21:1030', id: '9c2aeafb-466d-47cc-a102-92fc44451efe' },
+  { file: 'cards/citizen.svg', node: '21:1058', id: '9add737c-d57c-41f1-a205-373a446c4cdc' },
+  { file: 'cards/organizer.svg', node: '21:2174', id: '5895cb91-53ac-40b2-b137-91f6d4cfadda' },
+  { file: 'cards/educator.svg', node: '21:1089', id: '1afa60f6-696a-4747-bd73-6a32c206291a' },
 ]
 
+// Removes everything that isn't part of the node itself (see top).
+// `keepFrom` is the node's layer name: for a nested node, every <rect> drawn
+// before that layer belongs to a parent frame (backgrounds, borders), so it goes.
+function cleanSvg(svg, keepFrom) {
+  let lines = svg.split('\n')
+  if (keepFrom) {
+    const start = lines.findIndex((line) => line.includes(`id="${keepFrom}"`))
+    if (start === -1) throw new Error(`layer "${keepFrom}" not found`)
+    lines = lines.filter((line, i) => i >= start || !line.startsWith('<rect'))
+  }
+  return lines
+    .filter((line) => !/^<rect [^>]*fill="#1E1E1E"/.test(line))
+    .filter((line) => !/^<rect [^>]*stroke="#8A38F5"/.test(line))
+    .join('\n')
+    .replace(NOISE_COLOR, NOISE_COLOR_SOFT)
+}
+
+// The postcard has Figma's "noise" effect (black specks at 25%). Figma draws it
+// as a barely-visible texture, but browsers render the exported SVG filter much
+// coarser, so the card looked like sandpaper. 6% looks like Figma's version.
+const NOISE_COLOR = /flood-color="rgba\(0, 0, 0, 0\.25\)" result="color1Flood"/g
+const NOISE_COLOR_SOFT = 'flood-color="rgba(0, 0, 0, 0.06)" result="color1Flood"'
+
 let failed = 0
-for (const { file, node, id } of assets) {
+for (const { file, node, id, keepFrom } of assets) {
   const dest = join(root, file)
   try {
-    const res = await fetch(base + id + '.png')
+    const res = await fetch(base + id + '.svg')
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const svg = cleanSvg(await res.text(), keepFrom)
+    if (/<rect [^>]*#1E1E1E/.test(svg)) throw new Error('canvas background was not removed')
     await mkdir(dirname(dest), { recursive: true })
-    await writeFile(dest, Buffer.from(await res.arrayBuffer()))
+    await writeFile(dest, svg)
     console.log(`✓ ${file}`)
   } catch (err) {
     failed++

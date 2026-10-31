@@ -38,7 +38,7 @@ export function CharacterSelect({ onConfirm }: CharacterSelectProps) {
   const bottomRow = characters.slice(3)
 
   return (
-    <Stage className="bg-cream" onBackgroundClick={() => setSelectedId(null)}>
+    <Stage className="bg-paper" onBackgroundClick={() => setSelectedId(null)}>
       <h1 className="absolute inset-x-0 top-[94px] text-center font-mono text-[40px] italic text-black">
         choose your character
       </h1>

@@ -1,15 +1,21 @@
-import type { Character } from '../data/characters'
+import type { CSSProperties } from 'react'
+import type { Character, TextSpot } from '../data/characters'
 
 // A character card = the "blank" card image from Figma (border + title bar)
 // with the description, strength, and weakness written on top as real text.
 // Keeping the words as text (not baked into the image) means you can edit them
 // in src/data/characters.ts, and screen readers can read them.
 //
-// Text positions are percentages of the card, measured from the Figma
-// "character-card / … view=description" variants.
+// Each card puts its text in a slightly different spot in Figma, so the
+// positions come from the character's data (`card.text`).
 
 type CharacterCardProps = {
   character: Character
+}
+
+// Turns a TextSpot (percentages) into CSS for an absolutely positioned element
+function at({ left, top, width }: TextSpot): CSSProperties {
+  return { left: `${left}%`, top: `${top}%`, width: width === undefined ? undefined : `${width}%` }
 }
 
 export function CharacterCard({ character }: CharacterCardProps) {
@@ -18,23 +24,30 @@ export function CharacterCard({ character }: CharacterCardProps) {
   return (
     <article
       aria-label={name}
-      className="relative text-ink-soft"
+      // Figma: drop shadow 0 4px, blur 4, black at 25%
+      className="relative font-mono text-ink-soft italic drop-shadow-[0_4px_2px_rgba(0,0,0,0.25)]"
       style={{ width: card.width, height: card.height }}
     >
-      <img src={card.src} alt="" draggable={false} className="absolute inset-0 size-full" />
+      <img
+        src={card.src}
+        alt=""
+        draggable={false}
+        className="absolute max-w-none"
+        style={card.image ?? { left: 0, top: 0, width: card.width, height: card.height }}
+      />
       {/* The title is part of the card image, so give it to screen readers here */}
       <h2 className="sr-only">{name}</h2>
 
-      <p className="absolute top-[18.4%] right-[9.3%] left-[9.1%] font-mono text-[32px] leading-[1.15] italic">
+      <p className="absolute text-[36px] leading-[normal]" style={at(card.text.description)}>
         {description}
       </p>
 
-      <dl className="absolute top-[82.5%] right-[4%] left-[6.4%] space-y-1 font-mono text-[22px] italic">
-        <div className="flex gap-2">
+      <dl className="text-[24px] leading-[normal] whitespace-nowrap">
+        <div className="absolute flex gap-[1ch]" style={at(card.text.strength)}>
           <dt>Strength:</dt>
           <dd>{strength}</dd>
         </div>
-        <div className="flex gap-2">
+        <div className="absolute flex gap-[1ch]" style={at(card.text.weakness)}>
           <dt>Weakness:</dt>
           <dd>{weakness}</dd>
         </div>

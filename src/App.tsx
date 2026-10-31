@@ -42,7 +42,6 @@ export default function App() {
       return (
         <History
           paragraphs={screen.length === 'long' ? historyLong : historyShort}
-          onBack={() => setScreen({ name: 'choose-length' })}
           onPlay={() => setScreen({ name: 'character-select' })}
         />
       )

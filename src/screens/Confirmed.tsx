@@ -23,7 +23,7 @@ export function Confirmed({ characterId, onChooseAgain }: ConfirmedProps) {
             you are playing as <span className="font-script text-6xl not-italic">{character.name}</span>
           </h1>
           <p className="font-mono text-2xl italic text-ink/70">the game board is coming soon.</p>
-          <Button onClick={onChooseAgain} className="self-start">
+          <Button width="hug" onClick={onChooseAgain} className="self-start">
             choose again
           </Button>
         </div>
