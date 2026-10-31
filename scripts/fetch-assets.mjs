@@ -1,5 +1,6 @@
 // Downloads the game's images from the Figma file into public/assets.
-// Run once after cloning:   npm run fetch-assets
+// The downloaded files are committed, so you only need to run this after
+// changing an asset in Figma:   npm run fetch-assets
 //
 // Every asset is an SVG export of a Figma node. SVG (instead of PNG) because:
 //  • vector art (the lantern, the manual, all the text) stays sharp at any size;

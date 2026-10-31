@@ -18,7 +18,7 @@ Figma file: https://www.figma.com/design/ngmTVvmsAQ59uJWXg4cbC4/Merritt-Game
   `character-card / <name>` (view = blank/stats/description),
   `button` (label = …), `game-card` (side = front/back).
 - Interaction notes are written as Dev Mode annotations on the frames. Read them.
-- Images are exported to `public/assets/` by `scripts/fetch-assets.mjs`.
+- Images are exported to `public/assets/` (committed) by `scripts/fetch-assets.mjs`.
   When adding assets, add them to that script with their Figma node id.
 
 ## Conventions
@@ -35,7 +35,7 @@ Figma file: https://www.figma.com/design/ngmTVvmsAQ59uJWXg4cbC4/Merritt-Game
 - `npm run dev`: dev server
 - `npm run build`: type-check + production build (run before committing)
 - `npm run lint`: oxlint
-- `npm run fetch-assets`: download Figma images
+- `npm run fetch-assets`: re-download Figma images (only after they change in Figma)
 
 ## Next up
 - Design and build the screen after character select (replace `Confirmed.tsx`).

@@ -14,7 +14,6 @@ You need [Node.js](https://nodejs.org) 20 or newer.
 
 ```bash
 npm install          # install dependencies
-npm run fetch-assets # download the images from Figma into public/assets
 npm run dev          # start the dev server → open the URL it prints
 ```
 
@@ -25,7 +24,11 @@ Other commands:
 | `npm run build` | Type-checks and builds the site into `dist/` |
 | `npm run preview` | Serves the built `dist/` folder locally |
 | `npm run lint` | Checks the code for common mistakes |
+| `npm run fetch-assets` | Re-downloads the images from Figma (only after changing them in Figma) |
 
+> **The images are already in `public/assets/`.** Run `fetch-assets` only after
+> you change a postcard, icon, or card in Figma, then commit the new files.
+>
 > **If `fetch-assets` fails:** the Figma export links expire after about a week.
 > Open the project in Claude Code with the Figma MCP connected and ask it to
 > re-export the assets listed in `scripts/fetch-assets.mjs`. Each entry lists the
