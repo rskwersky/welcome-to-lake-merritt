@@ -29,6 +29,10 @@
 
   --font-mono: "Courier Prime", ui-monospace, monospace;
   --font-script: "boucherie-cursive", "Dancing Script", cursive;
+  /* Figma's "auto" line height for Boucherie Cursive is 2.44× the font size
+     (the font has very tall ascenders); browsers use ~1.5×. Use "leading-script"
+     on script text placed by its top edge, so it lands where Figma puts it. */
+  --leading-script: 2.44;
 
   /* Character card pop-in → use with the class "animate-card-in" */
   --animate-card-in: card-in 250ms ease-out;
@@ -58,11 +62,12 @@ body {
   background-image: linear-gradient(126.26deg, var(--color-peach) 37.346%, var(--color-cream) 92.677%);
 }
 
-/* The game board on the overview table: a sunset glow in the middle,
-   fading out to sage green at the edges (Figma: radial gradient, 8 stops). */
+/* The game board (overview table, manual): a sunset glow in the middle,
+   fading out to sage green at the edges (Figma: radial gradient, 8 stops).
+   "closest-side" makes the circle reach the edges at any board size. */
 .bg-board {
   background-image: radial-gradient(
-    circle 367.5px at center,
+    circle closest-side at center,
     var(--color-sky-orange) 0%,
     #f29b41 14.904%,
     var(--color-sky-gold) 27.885%,
@@ -71,6 +76,19 @@ body {
     #b1bd9b 69.712%,
     #a4bea8 87.019%,
     var(--color-sky-sage) 100%
+  );
+}
+
+/* Manual page 3 ("Objective"): misty blue at the top warming to peach at the
+   bottom, sampled from the Figma page. */
+.bg-manual-page {
+  background-image: linear-gradient(
+    180deg,
+    #dfe4df 0%,
+    #e8e9d5 28.6%,
+    #f7e9ca 57.2%,
+    #f8e4c5 71.5%,
+    #f5d5bd 100%
   );
 }
 

@@ -5,7 +5,8 @@ interviews with real Oakland organizers and residents. No one can win: stewardsh
 is never finished, and compromise is inevitable.
 
 This repo is the web version of the game, built one Figma section at a time.
-Done so far: **1 · intro** (game overview, postcard landing, history).
+Done so far: **1 · intro** (game overview, postcard landing, history) and
+**2 · setup** (game manual, player count).
 The full rules are in `docs/game-rules.md`. Designed in Figma, built with
 **React + TypeScript + Tailwind CSS**, bundled with **Vite**.
 
@@ -39,7 +40,8 @@ Other commands:
 
 ```
 01 game overview ──play game──▶ 02 landing ──click postcard──▶ 03 did you know
-  ──learn more──▶ 04 history / short ──continue──▶ 05 how to play (not built yet)
+  ──learn more──▶ 04 history / short ──continue──▶ 05 how to play (manual)
+  ──continue──▶ 06 player count ──continue──▶ 07 character select (not built yet)
 ```
 
 | Figma frame | Code |
@@ -47,7 +49,9 @@ Other commands:
 | 01 game overview | `src/screens/GameOverview.tsx` |
 | 02 landing, 03 did you know | `src/screens/Landing.tsx` (03 is 02 with the postcard flipped) |
 | 04 history / short, 04 history / long (from the game menu, later) | `src/screens/History.tsx` |
-| 05 how to play and later | `src/screens/NotBuiltYet.tsx` (placeholder) |
+| 05 how to play (manual, scrolls sideways) | `src/screens/HowToPlay.tsx` |
+| 06 player count / default, / selected | `src/screens/PlayerCount.tsx` |
+| 07 character select and later | `src/screens/NotBuiltYet.tsx` (placeholder) |
 
 `CharacterSelect.tsx`, `CharacterIcon.tsx`, `CharacterCard.tsx` and `Confirmed.tsx`
 follow the older character-select design. They're out of the flow for now and
@@ -63,11 +67,13 @@ src/
     gameRules.ts       Starting tokens, resets, city bank, score tracker (balance-tested)
     events.ts          The 15 event cards
     characters.ts      All six characters: text, colors, images, card positions
+    manual.ts          The words on the game manual pages
     history.ts         The long and short history, one string per paragraph
   components/
     Stage.tsx          Scales a 1440×1024 Figma frame to fit any window
     Button.tsx         The cream / colored button
     Postcard.tsx       The flip card (CSS 3D, no library)
+    CharacterToken.tsx The small round character icon
     CharacterIcon.tsx  One icon in the grid: default / active / dimmed
     CharacterCard.tsx  A character card: Figma image + live text
   hooks/
