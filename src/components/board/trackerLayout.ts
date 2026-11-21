@@ -14,7 +14,8 @@ export const SLOT_WIDTH = BAR_WIDTH / TRACKER.slots
 export const ROW_HEIGHT = 34.52 // bar + label
 export const ROW_GAP = 10
 export const PADDING = { x: 12, top: 14 }
-export const STAR = { width: 10.79, height: 10.36 }
+// The tracker's star size (height = width × the star shape's 29.31 / 30.71)
+export const STAR = { width: 10.79, height: 10.3 }
 
 /** Stage x/y of the center of star `index` (0 = nearest zero) on a metric's bar. */
 export function starSlotCenter(metric: Metric, index: number, negative: boolean) {

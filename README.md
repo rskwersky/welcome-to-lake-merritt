@@ -6,8 +6,9 @@ is never finished, and compromise is inevitable.
 
 This repo is the web version of the game, built one Figma section at a time.
 Done so far: **1 · intro** (game overview, postcard landing, history),
-**2 · setup** (game manual, player count), **3 · character select** and
-**4 · tutorial** (round 1 on the game board).
+**2 · setup** (game manual, player count), **3 · character select**,
+**4 · tutorial** (round 1) and **5 · game board + explore mode** (rounds 2 to 15).
+The end screen isn't designed yet.
 The full rules are in `docs/game-rules.md`. Designed in Figma, built with
 **React + TypeScript + Tailwind CSS**, bundled with **Vite**.
 
@@ -49,6 +50,7 @@ directly, with made-up players (only in development, never on the built site):
 | `localhost:5173/?screen=tutorial&characters=citizen,organizer` | exactly these characters, as P1 and P2 |
 | `localhost:5173/?screen=character-select&players=3` | character select for 3 players |
 | `localhost:5173/?screen=how-to-play` | the game manual |
+| `localhost:5173/?screen=game&players=4` | the game board at round 2 |
 
 Screen names: `game-overview`, `landing`, `history-short`, `how-to-play`,
 `player-count`, `character-select`, `tutorial`, `game`. See `src/devStart.ts`.
@@ -59,7 +61,8 @@ Screen names: `game-overview`, `landing`, `history-short`, `how-to-play`,
 01 game overview ──play game──▶ 02 landing ──click postcard──▶ 03 did you know
   ──learn more──▶ 04 history / short ──continue──▶ 05 how to play (manual)
   ──continue──▶ 06 player count ──continue──▶ 07 character select (once per player)
-  ──continue──▶ 08 tutorial / 1–8 ──start game──▶ 09 game board (not built yet)
+  ──continue──▶ 08 tutorial / 1–8 ──start game──▶ 09 game board (rounds 2 to 15)
+  ⇄ 10 explore mode ──after round 15──▶ end screen (not designed yet)
 ```
 
 | Figma frame | Code |
@@ -71,7 +74,9 @@ Screen names: `game-overview`, `landing`, `history-short`, `how-to-play`,
 | 06 player count / default, / selected | `src/screens/PlayerCount.tsx` |
 | 07 character select / … | `src/screens/CharacterSelect.tsx` |
 | 08 tutorial / 1–8 (and 4b, city bank) | `src/screens/Tutorial.tsx` |
-| 09 game board and later | `src/screens/NotBuiltYet.tsx` (placeholder) |
+| 09 game board, 10 explore / … | `src/screens/Game.tsx` |
+| 04 history / long (menu → learn more) | `src/screens/History.tsx` |
+| end screen | `src/screens/NotBuiltYet.tsx` (placeholder) |
 
 ## How the code is organized
 

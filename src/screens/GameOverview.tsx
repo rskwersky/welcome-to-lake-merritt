@@ -1,7 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { Button } from '../components/Button'
+import { MiniCharacterCard } from '../components/CardFrame'
+import { ManualArt } from '../components/board/ManualArt'
 import { MiniPostcard } from '../components/MiniPostcard'
 import { Stage } from '../components/Stage'
+import type { CharacterId } from '../data/gameRules'
 
 // Figma screen "01 game overview": the first thing you see. A tabletop with
 // the board, the six character cards, the manual, an event card and tokens.
@@ -77,26 +80,6 @@ function Token({ kind, width, height, className = '', style }: { kind: TokenKind
   )
 }
 
-/** A small token lying on a character card, placed by its bounding box and tilted. */
-function CardToken({ kind, box, rotate }: { kind: TokenKind; box: Box; rotate: number }) {
-  // Each token kind has a slightly different size in Figma.
-  const height = kind === 'social' ? 16.722 : kind === 'economic' ? 15.727 : 16.8
-  return (
-    <Tilted box={box} rotate={rotate}>
-      <Token kind={kind} width={17.079} height={height} />
-    </Tilted>
-  )
-}
-
-/** A character card's front image. */
-function CardImage({ id, className = '', style }: { id: string; className?: string; style?: CSSProperties }) {
-  return (
-    <div className={`absolute ${className}`} style={style}>
-      <img alt="" src={`${A}/card-${id}.png`} className="pointer-events-none absolute inset-0 size-full max-w-none rounded-[inherit] object-cover" draggable={false} />
-    </div>
-  )
-}
-
 const cardShadow = 'shadow-[-4px_4px_2px_0px_rgba(0,0,0,0.25)]'
 
 // ---------------------------------------------------------------------------
@@ -129,129 +112,26 @@ function GameCard() {
   )
 }
 
-// The six character cards, each with its three stat tokens on top.
+// The six character cards lying on the table, each a little tilted.
+// `center` is the card's middle (stage px) and `rotate` its tilt, from Figma.
+// The card itself is the shared MiniCharacterCard, so all six match.
 
-function Protector() {
+function TableCard({ id, center, rotate }: { id: CharacterId; center: { x: number; y: number }; rotate: number }) {
+  const w = 107.61
+  const h = 138.49
   return (
-    <>
-      <Tilted box={{ left: 35.3, top: 509.96, width: 124.695, height: 151.041 }} rotate={7.61}>
-        <div className={`relative h-[138.044px] w-[107.368px] rounded-[5px] ${cardShadow}`}>
-          <CardImage id="protector" className="inset-0 rounded-[5px]" />
-        </div>
-      </Tilted>
-      <CardToken kind="social" box={{ left: 76.25, top: 627.3, width: 19.142, height: 18.836 }} rotate={7.61} />
-      <CardToken kind="economic" box={{ left: 109.48, top: 632.15, width: 19.01, height: 17.849 }} rotate={7.61} />
-      <CardToken kind="political" box={{ left: 44.17, top: 622.94, width: 19.153, height: 18.913 }} rotate={7.61} />
-    </>
-  )
-}
-
-function Citizen() {
-  return (
-    <div className="absolute" style={{ left: 69.86, top: 681.2, width: 124.7, height: 160.225 }}>
-      <CardImage id="citizen" className={`top-[-0.8px] right-[13.29%] left-[0.6%] aspect-[1106/1422] rounded-[4px] ${cardShadow}`} />
-      <CardToken kind="social" box={{ left: 40.68, top: 109.55, width: 19.142, height: 18.836 }} rotate={7.61} />
-      <CardToken kind="economic" box={{ left: 72.3, top: 110.04, width: 19.01, height: 17.849 }} rotate={7.61} />
-      <CardToken kind="political" box={{ left: 7.81, top: 109.55, width: 19.153, height: 18.913 }} rotate={7.61} />
+    <div className={`absolute rounded-[6px] ${cardShadow}`} style={{ left: center.x - w / 2, top: center.y - h / 2, width: w, height: h, rotate: `${rotate}deg` }}>
+      <MiniCharacterCard id={id} />
     </div>
   )
 }
 
-function Environmentalist() {
-  return (
-    <Tilted box={{ left: 213.33, top: 730.68, width: 118.645, height: 147.203 }} rotate={-4.82}>
-      <div className={`relative h-[138.67px] w-[107.37px] rounded-[5px] ${cardShadow}`}>
-        <CardImage id="environmentalist" className="inset-0 rounded-[5px]" />
-        <Token kind="political" width={17.08} height={16.801} className="absolute!" style={{ left: 7.34, top: 114.29 }} />
-        <Token kind="social" width={17.08} height={16.723} className="absolute!" style={{ left: 39.69, top: 114.37 }} />
-        <Token kind="economic" width={17.08} height={15.727} className="absolute!" style={{ left: 72.05, top: 114.29 }} />
-      </div>
-    </Tilted>
-  )
-}
-
-function Organizer() {
-  return (
-    <>
-      <CardImage id="organizer" className={cardShadow} style={{ left: 202.26, top: 565.43, width: 107.37, height: 138.047 }} />
-      <CardToken kind="social" box={{ left: 242.25, top: 676.96, width: 19.142, height: 18.836 }} rotate={7.61} />
-      <CardToken kind="economic" box={{ left: 273.88, top: 677.45, width: 19.01, height: 17.849 }} rotate={7.61} />
-      <CardToken kind="political" box={{ left: 209.39, top: 676.96, width: 19.153, height: 18.913 }} rotate={7.61} />
-    </>
-  )
-}
-
-function Educator() {
-  return (
-    <>
-      <Tilted box={{ left: 166, top: 394.55, width: 114.915, height: 143.83 }} rotate={-3.2}>
-        <div className="relative h-[138.047px] w-[107.37px]">
-          <CardImage id="educator" className={`inset-[-0.31%_0_0.31%_0] rounded-[5px] ${cardShadow}`} />
-        </div>
-      </Tilted>
-      <CardToken kind="social" box={{ left: 213.7, top: 508.83, width: 18.051, height: 17.717 }} rotate={-3.44} />
-      <CardToken kind="economic" box={{ left: 244.62, top: 507.8, width: 17.992, height: 16.723 }} rotate={-3.44} />
-      <CardToken kind="political" box={{ left: 180.69, top: 511.1, width: 18.056, height: 17.795 }} rotate={-3.44} />
-    </>
-  )
-}
-
-function Recreationist() {
-  return (
-    <>
-      <CardImage id="recreationist" className="overflow-hidden rounded-[5px]" style={{ left: 34, top: 311.2, width: 107.37, height: 138.047 }} />
-      <CardToken kind="social" box={{ left: 75.31, top: 425.42, width: 17.185, height: 16.83 }} rotate={-0.36} />
-      <CardToken kind="economic" box={{ left: 106.24, top: 426.05, width: 17.178, height: 15.834 }} rotate={-0.36} />
-      <CardToken kind="political" box={{ left: 42.23, top: 425.92, width: 17.185, height: 16.908 }} rotate={-0.36} />
-    </>
-  )
-}
-
-/** The rule book, top right: a blue "greetings from Lake Merritt" cover with a page peeking out behind it. */
-function Manual() {
-  return (
-    <>
-      {/* back page */}
-      <Tilted box={{ left: 1156.76, top: 144.72, width: 176.825, height: 223.532 }} rotate={8.6}>
-        <div className="relative h-[201.63px] w-[155.396px] skew-x-2">
-          <div className="absolute inset-[0_0_-2.98%_-3.86%]">
-            <img alt="" src={`${A}/manual-back.svg`} className="block size-full max-w-none" />
-          </div>
-        </div>
-      </Tilted>
-      {/* cover */}
-      <Tilted box={{ left: 1156.7, top: 144.72, width: 177.611, height: 220.902 }} rotate={7.6}>
-        <div className={`h-[201.632px] w-[155.804px] skew-x-1 bg-sky-blue ${cardShadow}`} />
-      </Tilted>
-      {/* cover art: "LAKE", "MERRITT", canoe, pelican */}
-      <div className="absolute contents">
-        <div className="absolute inset-[20.53%_8.33%_69.47%_81.52%] flex items-center justify-center" style={{ containerType: 'size' }}>
-          <div className="h-[hypot(6.66446cqw,85.1006cqh)] w-[hypot(93.3355cqw,-14.8994cqh)] flex-none rotate-[-6.38deg]">
-            <img alt="" src={`${A}/manual-lake.png`} className="pointer-events-none size-full max-w-none" />
-          </div>
-        </div>
-        <div className="absolute inset-[20.24%_12.23%_72.8%_80.71%] flex items-center justify-center" style={{ containerType: 'size' }}>
-          <div className="h-[hypot(6.66288cqw,85.0973cqh)] w-[hypot(93.3371cqw,-14.9027cqh)] flex-none rotate-[-6.38deg]">
-            <img alt="" src={`${A}/manual-merritt.png`} className="pointer-events-none size-full max-w-none" />
-          </div>
-        </div>
-        <div className="absolute inset-[19.67%_9.15%_76.73%_86.94%] flex items-center justify-center" style={{ containerType: 'size' }}>
-          <div className="h-[hypot(93.6698cqw,16.5357cqh)] w-[hypot(6.33016cqw,-83.4643cqh)] flex-none rotate-[-83.4deg]">
-            <img alt="" src={`${A}/manual-canoe.svg`} className="block size-full max-w-none" />
-          </div>
-        </div>
-        <div className="absolute inset-[27.2%_9.26%_68.52%_86.6%] flex items-center justify-center" style={{ containerType: 'size' }}>
-          <div className="h-[hypot(-14.8153cqw,62.8135cqh)] w-[hypot(85.1847cqw,37.1865cqh)] flex-none rotate-[17.79deg]">
-            <img alt="" src={`${A}/manual-bird.png`} className="pointer-events-none size-full max-w-none" />
-          </div>
-        </div>
-      </div>
-      <Tilted box={{ left: 1178.91, top: 191.96, width: 76.58, height: 54.771 }} rotate={-16.19}>
-        <p className="font-script text-[15px] leading-normal whitespace-nowrap text-black">greetings from</p>
-      </Tilted>
-    </>
-  )
-}
+const Protector = () => <TableCard id="protector" center={{ x: 97.65, y: 585.48 }} rotate={7.61} />
+const Citizen = () => <TableCard id="citizen" center={{ x: 124.3, y: 749.4 }} rotate={7.61} />
+const Environmentalist = () => <TableCard id="environmentalist" center={{ x: 272.65, y: 804.28 }} rotate={-4.82} />
+const Organizer = () => <TableCard id="organizer" center={{ x: 255.95, y: 634.45 }} rotate={7.61} />
+const Educator = () => <TableCard id="educator" center={{ x: 223.46, y: 466.47 }} rotate={-3.2} />
+const Recreationist = () => <TableCard id="recreationist" center={{ x: 87.69, y: 380.22 }} rotate={-0.36} />
 
 /** The "Graffiti at the Boathouse" event card, with tiny tokens next to its options. */
 function EventCard() {
@@ -374,7 +254,7 @@ export function GameOverview({ onPlay }: GameOverviewProps) {
         <Recreationist />
       </Lift>
       <Lift label="The game manual">
-        <Manual />
+        <ManualArt />
       </Lift>
       <Lift label="The 'Graffiti at the Boathouse' event card">
         <EventCard />

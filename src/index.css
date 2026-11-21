@@ -9,6 +9,9 @@
   --color-cream: #f9f5ea;
   --color-ink: #0f1028;
   --color-ink-soft: #0f132c;
+  /* Rating stars: gold when a metric goes up, pink when it goes down */
+  --color-star-up: #fbd57d;
+  --color-star-down: #f5b29f;
 
   /* Token boxes in the allocate-tokens popup */
   --color-error: #f6b29f; /* more tokens than they have */
@@ -31,14 +34,27 @@
   --color-organizer: #f3bfd6;
   --color-educator: #a9b0ff;
 
-  /* Light band that covers the stats strip at the bottom of each character
-     card (character select only shows who they are, not their tokens). */
+  /* Character cards (drawn in src/components/CardFrame.tsx): the inside
+     color, the outer frame, and the title bar / stats bar. Sampled from the
+     Figma card art. */
   --color-card-organizer: #f1bbd3;
   --color-card-recreationist: #f5b19e;
   --color-card-protector: #f5e6c5;
   --color-card-environmentalist: #d4e1d5;
   --color-card-citizen: #c3dee7;
   --color-card-educator: #f3f0e1;
+  --color-card-organizer-frame: #df6596;
+  --color-card-recreationist-frame: #cc370c;
+  --color-card-protector-frame: #f7c15f;
+  --color-card-environmentalist-frame: #9cc4a9;
+  --color-card-citizen-frame: #8baec1;
+  --color-card-educator-frame: #141649;
+  --color-card-organizer-title: #7c3f60;
+  --color-card-recreationist-title: #771b02;
+  --color-card-protector-title: #8a560b;
+  --color-card-environmentalist-title: #384237;
+  --color-card-citizen-title: #3d484c;
+  --color-card-educator-title: #23296e;
 
   /* A player badge appearing on a character card: waits 450ms for the card to
      flip back, then fades and grows in. Use with the class "animate-badge-in".
@@ -50,12 +66,6 @@
     to { opacity: 1; scale: 1; }
   }
 
-  /* A star landing in the score tracker: pops in from slightly bigger. */
-  --animate-star-in: star-in 300ms ease-out backwards;
-  @keyframes star-in {
-    from { opacity: 0; scale: 1.8; }
-    to { opacity: 1; scale: 1; }
-  }
 
   /* The tutorial's "click this next" cue: the golden glow gently breathes. */
   --animate-glow: glow 1.6s ease-in-out infinite;

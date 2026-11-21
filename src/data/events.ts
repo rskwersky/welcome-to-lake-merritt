@@ -1,4 +1,7 @@
 // The 15 event cards. Source of truth: the "Event Deck & Token Rules" doc.
+// Options are written from the players' side: they're community groups, not
+// the city, so they fund, petition, lobby or volunteer. (Costs and effects
+// are unchanged from the balance-tested numbers.)
 // Option 1 = funded fix, option 2 = cheaper compromise that helps one metric
 // at another's expense, option 3 = free and always hurts the lake.
 // If you change a cost or effect, re-run the balance check before shipping.
@@ -20,6 +23,12 @@ export type GameEvent = {
   id: string
   title: string
   scenario: string
+  /**
+   * One line from someone the event affects, shown in italics under the
+   * title. These were written for the game (not taken from the interviews);
+   * swap in real interview lines, with permission, when you have them.
+   */
+  voice: { quote: string; speaker: string }
   options: [EventOption, EventOption, EventOption]
 }
 
@@ -29,8 +38,9 @@ const free: Cost = {}
 export const EVENTS: GameEvent[] = [
   {
     id: 'unhoused-occupation',
-    title: 'Unhoused Occupation',
-    scenario: 'An encampment has grown along the shoreline near the Pergola. Trash is reaching the water, and some visitors avoid the area.',
+    title: 'Shelter by the Shore',
+    scenario: 'Tents have lined the shore near the Pergola since winter. Trash is reaching the water, and some walkers now take the long way around.',
+    voice: { quote: 'Everyone deserves to be at the lake. That includes the folks who live here.', speaker: 'an outreach volunteer' },
     options: [
       { text: 'Fund outreach workers, restrooms and daily trash pickup, with referrals to shelter', cost: { economic: 4, social: 4 }, effect: fx(2, 2, 1), pushedBy: ['educator', 'recreationist'] },
       { text: 'Ask the city to clear the encampment', cost: { political: 3 }, effect: fx(3, -2, -1), pushedBy: ['protector', 'environmentalist'] },
@@ -40,37 +50,41 @@ export const EVENTS: GameEvent[] = [
   {
     id: 'parking-panic',
     title: 'Parking Panic',
-    scenario: 'Since meters went in on Lakeshore Avenue, weekend visitors circle for parking and double-park, blocking traffic.',
+    scenario: 'It\'s a sunny Saturday and every car in Oakland wants a spot on Lakeshore Avenue. Drivers circle the block, double park and honk at the cyclists squeezing past.',
+    voice: { quote: 'I spent more time parking than picnicking.', speaker: 'a visitor from across town' },
     options: [
-      { text: 'Use meter revenue for a free weekend shuttle and bike valet', cost: { economic: 4, political: 3 }, effect: fx(0, 3, 1), pushedBy: ['recreationist', 'educator'] },
-      { text: 'Step up ticketing and towing on weekends', cost: { political: 3 }, effect: fx(0, -1, 2), pushedBy: ['citizen'] },
+      { text: 'Push the city to spend meter revenue on a free weekend shuttle and bike valet', cost: { economic: 4, political: 3 }, effect: fx(0, 3, 1), pushedBy: ['recreationist', 'educator'] },
+      { text: 'Petition the city for stricter weekend parking enforcement', cost: { political: 3 }, effect: fx(0, -1, 2), pushedBy: ['citizen'] },
       { text: 'Do nothing', cost: free, effect: fx(0, -2, -2), pushedBy: [] },
     ],
   },
   {
     id: 'bandage-the-bandstand',
     title: 'Bandage the Bandstand',
-    scenario: 'The historic bandstand in Lakeside Park is cracked and fenced off, and summer concerts are canceled.',
+    scenario: 'The Edoff Memorial Bandstand is cracked and wrapped in orange fencing. The summer concert series is canceled until further notice.',
+    voice: { quote: 'My grandparents danced here. I want my kids to.', speaker: 'a Lakeside Park regular' },
     options: [
-      { text: 'Restore it with ramps and accessible seating', cost: { economic: 4, political: 3 }, effect: fx(0, 2, 2), pushedBy: ['organizer', 'recreationist'] },
+      { text: 'Fundraise to restore it with ramps and accessible seating', cost: { economic: 4, political: 3 }, effect: fx(0, 2, 2), pushedBy: ['organizer', 'recreationist'] },
       { text: 'Hold a volunteer patch-and-paint day', cost: { social: 6 }, effect: fx(0, 1, 1), pushedBy: ['educator'] },
-      { text: 'Keep it fenced off', cost: free, effect: fx(0, -1, -2), pushedBy: [] },
+      { text: 'Leave it fenced off', cost: free, effect: fx(0, -1, -2), pushedBy: [] },
     ],
   },
   {
     id: 'accessible-bathrooms',
     title: 'Accessible Bathrooms',
-    scenario: "The restrooms near the lake close early and aren't wheelchair accessible. Families and vendors have nowhere to go.",
+    scenario: 'The lakeside restrooms lock before sunset, and the ramp is too steep for a wheelchair. Vendors hold it all afternoon; families pack up early.',
+    voice: { quote: 'Access isn\'t a luxury. It\'s the first thing.', speaker: 'a disability advocate' },
     options: [
-      { text: 'Build accessible restrooms that stay open until dark', cost: { economic: 5, political: 3 }, effect: fx(1, 3, 1), pushedBy: ['recreationist', 'citizen'] },
-      { text: 'Rent portable toilets for weekends', cost: { economic: 3 }, effect: fx(0, 1, -1), pushedBy: ['organizer'] },
+      { text: 'Lobby the city for accessible restrooms that stay open until dark', cost: { economic: 5, political: 3 }, effect: fx(1, 3, 1), pushedBy: ['recreationist', 'citizen'] },
+      { text: 'Pool money to rent portable toilets on weekends', cost: { economic: 3 }, effect: fx(0, 1, -1), pushedBy: ['organizer'] },
       { text: 'Do nothing', cost: free, effect: fx(-1, -1, -1), pushedBy: [] },
     ],
   },
   {
     id: 'birds-down',
     title: 'Birds Down',
-    scenario: 'Volunteers are finding sick ducks and herons near the bird sanctuary.',
+    scenario: 'Lake Merritt became North America\'s first official wildlife refuge in 1870. Now volunteers at the bird sanctuary are finding sick ducks and herons, and nobody knows why yet.',
+    voice: { quote: 'The birds tell you how the water is doing.', speaker: 'a Rotary Nature Center volunteer' },
     options: [
       { text: 'Fund water testing and a wildlife rescue team with Rotary Nature Center volunteers', cost: { economic: 3, social: 5 }, effect: fx(3, 0, 1), pushedBy: ['environmentalist', 'educator'] },
       { text: 'Run a volunteer campaign asking visitors not to feed the birds', cost: { social: 4 }, effect: fx(1, 0, 0), pushedBy: ['protector'] },
@@ -80,9 +94,10 @@ export const EVENTS: GameEvent[] = [
   {
     id: 'power-outage',
     title: 'Power Outage',
-    scenario: 'The Necklace of Lights has gone dark, and the paths around the lake are unlit at night.',
+    scenario: 'The Necklace of Lights has gone dark. Evening joggers run by phone flashlight, and the paths feel a lot less friendly after sunset.',
+    voice: { quote: 'The lights are how you know you\'re home.', speaker: 'an Adams Point neighbor' },
     options: [
-      { text: 'Repair the lights and upgrade them to LEDs', cost: { economic: 5, political: 1 }, effect: fx(0, 2, 2), pushedBy: ['organizer', 'citizen'] },
+      { text: 'Raise money to repair the lights and upgrade them to LEDs', cost: { economic: 5, political: 1 }, effect: fx(0, 2, 2), pushedBy: ['organizer', 'citizen'] },
       { text: 'Organize volunteer lantern walks until repairs are funded', cost: { social: 4 }, effect: fx(0, 1, 1), pushedBy: ['recreationist', 'educator'] },
       { text: 'Wait for the city', cost: free, effect: fx(0, -2, -1), pushedBy: [] },
     ],
@@ -90,10 +105,11 @@ export const EVENTS: GameEvent[] = [
   {
     id: 'covid-spike',
     title: 'Covid Spike',
-    scenario: 'Cases are rising, and the county is considering closing lakeside gathering spaces.',
+    scenario: 'Cases are climbing again, and the county is weighing whether to close the lakeside lawns. For neighbors without a backyard, the lake is the only outdoor space they have.',
+    voice: { quote: 'Closing the park doesn\'t keep people home. It keeps them inside.', speaker: 'a public health nurse' },
     options: [
       { text: 'Set up free masks, hand-washing stations and spaced-out outdoor events', cost: { economic: 3, social: 5 }, effect: fx(1, 2, 1), pushedBy: ['educator', 'recreationist'] },
-      { text: 'Close the lawns and picnic areas', cost: { political: 3 }, effect: fx(2, -2, -1), pushedBy: ['protector', 'citizen'] },
+      { text: 'Urge the county to close the lawns and picnic areas', cost: { political: 3 }, effect: fx(2, -2, -1), pushedBy: ['protector', 'citizen'] },
       { text: 'Do nothing', cost: free, effect: fx(0, -1, -2), pushedBy: [] },
     ],
   },
@@ -101,29 +117,32 @@ export const EVENTS: GameEvent[] = [
     // Tutorial card (round 1). Keeps its original, cheaper costs.
     id: 'graffiti-at-the-boathouse',
     title: 'Graffiti at the Boathouse',
-    scenario: 'Graffiti has been appearing on the boathouse. Some find it disruptive to the ambiance.',
+    scenario: 'Overnight, a burst of color appeared across the boathouse wall. Some neighbors call it vandalism; others are already taking photos in front of it.',
+    voice: { quote: 'Who decides what counts as art?', speaker: 'a local muralist' },
     options: [
-      { text: 'Declare a new art space to encourage graffiti in a designated area', cost: { political: 2, social: 3 }, effect: fx(0, 3, 2), pushedBy: ['recreationist', 'educator'] },
-      { text: 'Station an officer to walk the perimeter of the lake and patrol for vandalism', cost: { political: 3 }, effect: fx(0, -1, 1), pushedBy: ['citizen', 'protector'] },
+      { text: 'Propose a new art space where graffiti is welcome', cost: { political: 2, social: 3 }, effect: fx(0, 3, 2), pushedBy: ['recreationist', 'educator'] },
+      { text: 'Ask the city to station an officer to patrol the lake for vandalism', cost: { political: 3 }, effect: fx(0, -1, 1), pushedBy: ['citizen', 'protector'] },
       { text: 'Leave the graffiti', cost: free, effect: fx(0, 0, -3), pushedBy: [] },
     ],
   },
   {
     id: 'dredging',
     title: 'Dredging',
-    scenario: 'Sediment has built up on the lake bottom, feeding algae and lowering oxygen.',
+    scenario: 'Decades of silt have settled on the lake bottom. On hot days the water turns green with algae, and fish come up gasping for air.',
+    voice: { quote: 'You can smell the lake before you see it now.', speaker: 'a rower at the Boating Center' },
     options: [
-      { text: 'Dredge the whole lake', cost: { economic: 5, political: 4 }, effect: fx(4, 0, 2), pushedBy: ['environmentalist', 'protector'] },
-      { text: "Add aeration fountains like the Lake Merritt Institute's", cost: { economic: 3 }, effect: fx(2, 0, 1), pushedBy: ['environmentalist'] },
+      { text: 'Campaign for the city to dredge the whole lake', cost: { economic: 5, political: 4 }, effect: fx(4, 0, 2), pushedBy: ['environmentalist', 'protector'] },
+      { text: "Fund aeration fountains like the Lake Merritt Institute's", cost: { economic: 3 }, effect: fx(2, 0, 1), pushedBy: ['environmentalist'] },
       { text: 'Do nothing', cost: free, effect: fx(-4, 0, 0), pushedBy: [] },
     ],
   },
   {
     id: 'recycling-initiative',
     title: 'Recycling Initiative',
-    scenario: 'Trash bins overflow after every sunny weekend, and litter blows into the lake.',
+    scenario: 'After every sunny weekend, bins overflow along the shore and the wind does the rest. By Monday morning, bottles bob between the geese.',
+    voice: { quote: 'It\'s not that people don\'t care. There\'s just nowhere to put it.', speaker: 'a weekend vendor' },
     options: [
-      { text: 'Hire a paid youth crew for weekend cleanup and add recycling stations', cost: { economic: 3, social: 5 }, effect: fx(2, 2, 1), pushedBy: ['educator', 'organizer'] },
+      { text: 'Fund a paid youth crew for weekend cleanup and recycling stations', cost: { economic: 3, social: 5 }, effect: fx(2, 2, 1), pushedBy: ['educator', 'organizer'] },
       { text: 'Host a monthly volunteer cleanup', cost: { social: 4 }, effect: fx(2, 0, 0), pushedBy: ['protector', 'environmentalist'] },
       { text: 'Do nothing', cost: free, effect: fx(-2, 0, -1), pushedBy: [] },
     ],
@@ -131,49 +150,54 @@ export const EVENTS: GameEvent[] = [
   {
     id: 'jam-session',
     title: 'Jam Session',
-    scenario: 'A weekend drum circle and DJ sets draw big crowds. Some neighbors complain about the noise.',
+    scenario: 'The Saturday drum circle at the Pergola has grown into a full party with DJs and dancing. It draws crowds from across the Bay, and some neighbors hear it with the windows shut.',
+    voice: { quote: 'This is what the lake sounds like when it\'s alive.', speaker: 'a drummer' },
     options: [
-      { text: 'Create a permitted performance zone with set hours', cost: { political: 1, social: 5 }, effect: fx(0, 2, 1), pushedBy: ['recreationist', 'organizer'] },
-      { text: 'Enforce the noise ordinance', cost: { political: 3 }, effect: fx(0, -1, 1), pushedBy: ['citizen'] },
+      { text: 'Petition the city for a permitted performance zone with set hours', cost: { political: 1, social: 5 }, effect: fx(0, 2, 1), pushedBy: ['recreationist', 'organizer'] },
+      { text: 'Call on the city to enforce the noise ordinance', cost: { political: 3 }, effect: fx(0, -1, 1), pushedBy: ['citizen'] },
       { text: 'Do nothing', cost: free, effect: fx(0, 0, -2), pushedBy: [] },
     ],
   },
   {
     id: 'wild-ride',
     title: 'Wild Ride',
-    scenario: 'E-scooters race along the lakeside path, and some end up dumped in the water.',
+    scenario: 'Rental scooters zip along the lakeside path, weaving between strollers and runners. Volunteers keep fishing them out of the water.',
+    voice: { quote: 'I love that they bring people here. I don\'t love dodging them.', speaker: 'a morning runner' },
     options: [
-      { text: 'Add scooter lanes and docking corrals', cost: { economic: 3, political: 3 }, effect: fx(1, 2, 1), pushedBy: ['recreationist', 'organizer'] },
-      { text: 'Ban scooters from the park', cost: { political: 3 }, effect: fx(2, -1, -1), pushedBy: ['protector', 'environmentalist'] },
+      { text: 'Push the city to add scooter lanes and docking corrals', cost: { economic: 3, political: 3 }, effect: fx(1, 2, 1), pushedBy: ['recreationist', 'organizer'] },
+      { text: 'Petition the city to ban scooters from the park', cost: { political: 3 }, effect: fx(2, -1, -1), pushedBy: ['protector', 'environmentalist'] },
       { text: 'Do nothing', cost: free, effect: fx(-1, 0, -1), pushedBy: [] },
     ],
   },
   {
     id: 'vendor-dispute',
     title: 'Vendor Dispute',
-    scenario: 'On weekends, dozens of vendors set up along Lakeshore Avenue. Some neighbors complain about trash and blocked sidewalks.',
+    scenario: 'Every weekend, dozens of vendors line Lakeshore Avenue selling food, art and clothes. For many it\'s their main income. Some neighbors complain about trash and blocked sidewalks.',
+    voice: { quote: 'We\'re not in the way. We\'re the reason people come.', speaker: 'a vendor' },
     options: [
-      { text: 'Launch a vendor program with free permits, assigned spots and trash service', cost: { economic: 3, political: 1, social: 4 }, effect: fx(1, 2, 1), pushedBy: ['recreationist', 'organizer'] },
-      { text: 'Crack down on unpermitted vendors', cost: { political: 3 }, effect: fx(1, -2, 1), pushedBy: ['citizen', 'protector'] },
+      { text: 'Partner with the city on a vendor program with free permits, assigned spots and trash service', cost: { economic: 3, political: 1, social: 4 }, effect: fx(1, 2, 1), pushedBy: ['recreationist', 'organizer'] },
+      { text: 'Ask the city to crack down on unpermitted vendors', cost: { political: 3 }, effect: fx(1, -2, 1), pushedBy: ['citizen', 'protector'] },
       { text: 'Do nothing', cost: free, effect: fx(-2, 0, 0), pushedBy: [] },
     ],
   },
   {
     id: 'sticky-situation',
     title: 'Sticky Situation',
-    scenario: 'A developer offers to build a lakeside café on public parkland, with a share of profits going to park maintenance.',
+    scenario: 'A developer wants to build a café on public parkland by the water, with part of the profits going to park upkeep. The council vote is next week.',
+    voice: { quote: 'A café is nice. A café you can\'t afford is a fence.', speaker: 'a neighborhood organizer' },
     options: [
-      { text: 'Approve it only if it includes free public seating and restrooms', cost: { political: 3, social: 4 }, effect: fx(0, 1, 2), pushedBy: ['organizer', 'educator'] },
-      { text: 'Approve the café as proposed', cost: { political: 1 }, effect: fx(0, -2, 2), pushedBy: ['citizen'] },
-      { text: 'Delay the decision', cost: free, effect: fx(0, -1, -1), pushedBy: [] },
+      { text: 'Testify at city council: approve it only with free public seating and restrooms', cost: { political: 3, social: 4 }, effect: fx(0, 1, 2), pushedBy: ['organizer', 'educator'] },
+      { text: 'Speak in support of the café as proposed', cost: { political: 1 }, effect: fx(0, -2, 2), pushedBy: ['citizen'] },
+      { text: 'Stay out of the debate', cost: free, effect: fx(0, -1, -1), pushedBy: [] },
     ],
   },
   {
     id: 'storm-incoming',
     title: 'Storm Incoming',
-    scenario: 'A big storm is forecast, and the storm drains around the lake carry street trash straight into the water.',
+    scenario: 'A big storm is heading for the Bay. Every storm drain around the lake empties straight into the water, carrying whatever is in the gutter with it.',
+    voice: { quote: 'Whatever\'s on the street today is in the lake tomorrow.', speaker: 'a creek volunteer' },
     options: [
-      { text: 'Install trash-capture screens in the storm drains', cost: { economic: 5, political: 1 }, effect: fx(3, 0, 1), pushedBy: ['environmentalist', 'protector'] },
+      { text: 'Fund trash-capture screens for the storm drains', cost: { economic: 5, political: 1 }, effect: fx(3, 0, 1), pushedBy: ['environmentalist', 'protector'] },
       { text: 'Organize volunteers to clear the drains before the storm', cost: { social: 4 }, effect: fx(1, 0, 1), pushedBy: ['educator'] },
       { text: 'Do nothing', cost: free, effect: fx(-2, 0, -2), pushedBy: [] },
     ],

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Effect } from '../../data/events'
 import { pointsToStars, type Metric } from '../../data/gameRules'
 import { METRIC_ROWS } from '../../game/state'
-import { HalfStarEdge } from '../board/GameBoard'
+import { STAR } from '../board/trackerLayout'
+import { Star } from '../Star'
 
 // Figma's `metric-change-popup` (tutorial step 6, and every round): how the
 // chosen option changed the lake, as stars: "+★★ reputation". Pink stars and
@@ -14,37 +15,19 @@ import { HalfStarEdge } from '../board/GameBoard'
 // When the round moves on, each star flies from the popup into its slot in
 // the score tracker (<FlyingStars>).
 
-const B = '/assets/board'
-const BIG = { width: 30.71, height: 29.31 } // popup star size (Figma "Star 9")
+// Popup star size (Figma "Star 9") and its outline
+const BIG = { width: 30.71, height: 29.31 } // the star shape is 30.71 × 29.31
+const OUTLINE = 1.5
 
-/** The popup-size star picture. Pink when negative; `half` keeps the half nearest zero. */
-function StarImage({ negative, half }: { negative: boolean; half: boolean }) {
-  return (
-    <span className="relative block overflow-hidden" style={{ width: half ? BIG.width / 2 : BIG.width, height: BIG.height }}>
-      <img
-        alt=""
-        src={negative ? `${B}/rating-star-b.svg` : `${B}/popup-star.svg`}
-        className="absolute top-0 max-w-none"
-        style={{ width: BIG.width, height: BIG.height, left: half && negative ? -BIG.width / 2 : 0 }}
-      />
-      {half && <HalfStarEdge side={negative ? 'left' : 'right'} />}
-    </span>
-  )
-}
-
-/** A popup star in its 34.96px box (the star is inset in it, as in Figma). Marked so it can fly. */
+/**
+ * A popup star, marked so it can fly. Its box is just wider than the star
+ * (a half star gets a half-width box), so the gaps between stars are even.
+ */
 function BigStar({ negative, half, metric, index }: { negative: boolean; half: boolean; metric: Metric; index: number }) {
   return (
-    <span className="relative block size-[34.96px] shrink-0">
-      <span
-        className="absolute top-[3.97%] left-[6.08%]"
-        style={half && negative ? { left: `calc(6.08% + ${BIG.width / 2}px)` } : undefined}
-        data-fly-star={metric}
-        data-index={index}
-        data-negative={negative}
-        data-half={half}
-      >
-        <StarImage negative={negative} half={half} />
+    <span className="flex h-[34.96px] shrink-0 items-center justify-center" style={{ width: (half ? BIG.width / 2 : BIG.width) + 4 }}>
+      <span data-fly-star={metric} data-index={index} data-negative={negative} data-half={half}>
+        <Star width={BIG.width} negative={negative} half={half} outline={OUTLINE} />
       </span>
     </span>
   )
@@ -94,44 +77,77 @@ export type Flight = {
 /**
  * Stars travelling from the popup to the score tracker. Each star starts
  * where its popup star was, then (one frame later, so the browser has drawn
- * the starting spot) moves and shrinks to its tracker slot. They leave one
- * after another, 90ms apart. All positions are stage px (1440×1024).
+ * the starting spot) glides to its tracker slot, shrinking as it goes.
+ * All positions are stage px (1440×1024).
+ *
+ * To make the path a gentle curve instead of a straight line, the move is
+ * split across two layers: the outer layer moves sideways and slows down
+ * at the end (ease-out), the inner one moves up/down and speeds up
+ * (ease-in). Together they trace an arc, like something tossed.
+ * The stars leave one after another, STAGGER ms apart.
  */
 export function FlyingStars({ flights, onLanded }: { flights: Flight[]; onLanded: () => void }) {
   const [launched, setLaunched] = useState(false)
-  const DURATION = 700
-  const STAGGER = 90
+  const DURATION = 850
+  const STAGGER = 110
+  // The round moves on exactly once, when the last star has arrived.
+  const landed = useRef(false)
+  const land = () => {
+    if (landed.current) return
+    landed.current = true
+    onLanded()
+  }
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => requestAnimationFrame(() => setLaunched(true)))
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const done = setTimeout(onLanded, reduce ? 0 : DURATION + STAGGER * flights.length)
-    return () => {
-      cancelAnimationFrame(frame)
-      clearTimeout(done)
+    if (reduce) {
+      onLanded()
+      return
     }
-  }, [flights, onLanded])
+    const frame = requestAnimationFrame(() => requestAnimationFrame(() => setLaunched(true)))
+    return () => cancelAnimationFrame(frame)
+  }, [onLanded])
 
-  const small = 10.79 / BIG.width // tracker star size ÷ popup star size
+  // A safety net in case the browser skips the "transition ended" event
+  // (e.g. the tab is in the background): land a bit after it should have.
+  useEffect(() => {
+    if (!launched) return
+    const timer = setTimeout(land, DURATION + STAGGER * flights.length + 400)
+    return () => clearTimeout(timer)
+  })
+
+  const small = STAR.width / BIG.width // tracker star size ÷ popup star size
+  const last = flights.length - 1
   return (
     <div className="pointer-events-none absolute inset-0 z-40" aria-hidden="true">
-      {flights.map((f, i) => (
-        <div
-          key={i}
-          className="absolute transition-[translate,scale] ease-in-out motion-reduce:transition-none"
-          // `from` and `to` are the centers of the star; shrink around the center.
-          style={{
-            left: f.from.x - (f.half ? BIG.width / 4 : BIG.width / 2),
-            top: f.from.y - BIG.height / 2,
-            translate: launched ? `${f.to.x - f.from.x}px ${f.to.y - f.from.y}px` : '0 0',
-            scale: launched ? small : 1,
-            transitionDuration: `${DURATION}ms`,
-            transitionDelay: `${i * STAGGER}ms`,
-          }}
-        >
-          <StarImage negative={f.negative} half={f.half} />
-        </div>
-      ))}
+      {flights.map((f, i) => {
+        const timing = { transitionDuration: `${DURATION}ms`, transitionDelay: `${i * STAGGER}ms` }
+        return (
+          <div
+            key={i}
+            className="absolute transition-[translate] ease-[cubic-bezier(0.25,0.6,0.35,1)]"
+            // `from` and `to` are the centers of the star; it shrinks around its center.
+            style={{
+              left: f.from.x - (f.half ? BIG.width / 4 : BIG.width / 2),
+              top: f.from.y - BIG.height / 2,
+              translate: launched ? `${f.to.x - f.from.x}px 0` : '0 0',
+              ...timing,
+            }}
+          >
+            <div
+              className="transition-[translate,scale] ease-[cubic-bezier(0.55,0,0.75,0.6)]"
+              style={{ translate: launched ? `0 ${f.to.y - f.from.y}px` : '0 0', scale: launched ? small : 1, ...timing }}
+              // The last star to leave is the last to arrive: when it has
+              // finished moving, the stars are all in place. (Measuring the
+              // end instead of guessing it with a timer means no star is
+              // ever removed mid-flight.)
+              onTransitionEnd={i === last ? (e) => e.propertyName === 'translate' && land() : undefined}
+            >
+              <Star width={BIG.width} negative={f.negative} half={f.half} outline={OUTLINE} />
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

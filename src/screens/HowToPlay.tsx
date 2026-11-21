@@ -334,6 +334,20 @@ function HowToPlayPages() {
   )
 }
 
+/**
+ * Just the three rule pages (Objective, How to play, steps 3 to 5), for
+ * explore mode's "open the manual". They sit at their canvas positions
+ * (x 1243 to 2771, y 165 to 864), so the caller moves and scales this box.
+ */
+export function ManualPages() {
+  return (
+    <div className="relative h-[1024px] overflow-clip" style={{ width: CANVAS_WIDTH }}>
+      <ObjectivePage />
+      <HowToPlayPages />
+    </div>
+  )
+}
+
 // ---------------------------------------------------------------------------
 
 type HowToPlayProps = {

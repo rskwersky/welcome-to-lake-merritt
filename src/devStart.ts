@@ -7,7 +7,8 @@
 //   http://localhost:5173/?screen=tutorial&characters=citizen,organizer
 //
 // screen:     game-overview, landing, history-short, how-to-play,
-//             player-count, character-select, tutorial, game
+//             player-count, character-select, tutorial, game,
+//             history-long, game-over
 // players:    1 to 6 (default 6). Players get characters in grid order.
 // characters: pick exactly which characters, in player order
 //             (sets the player count too).
@@ -24,6 +25,8 @@ export const SCREEN_NAMES = [
   'character-select',
   'tutorial',
   'game',
+  'history-long',
+  'game-over',
 ] as const
 export type ScreenName = (typeof SCREEN_NAMES)[number]
 

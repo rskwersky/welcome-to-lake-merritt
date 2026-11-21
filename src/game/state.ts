@@ -3,10 +3,13 @@
 // The numbers themselves (starting tokens, the city bank rule) live in
 // src/data/gameRules.ts.
 
-import type { Cost, Effect } from '../data/events'
+import { EVENTS, type Cost, type Effect } from '../data/events'
 import {
   STARTING_TOKENS,
   TOKEN_ORDER,
+  TOTAL_ROUNDS,
+  TUTORIAL_EVENT_ID,
+  isResetAfter,
   cityBankPool,
   isCityUnlocked,
   type CharacterId,
@@ -62,7 +65,8 @@ export function hasCityBank(players: Player[]): boolean {
 
 export type Allocation = Partial<Record<Holder, Tokens>>
 
-export type InputState = 'default' | 'error' | 'complete' | 'locked'
+/** locked = the city bank isn't open for this type yet; unneeded = the cost has none of this type */
+export type InputState = 'default' | 'error' | 'complete' | 'locked' | 'unneeded'
 
 export type AllocationCheck = {
   /** How each box should look: error = more than they have (or more than needed) */
@@ -86,6 +90,7 @@ export function checkAllocation(cost: Cost, allocation: Allocation, players: Pla
     isCityUnlocked(players.map((p) => remaining(p.character, players, spent)[t] - given(p.character, t)))
 
   const input = (h: Holder, t: TokenType): InputState => {
+    if (costOf(cost, t) === 0) return 'unneeded'
     if (h === 'city' && !cityOpen(t)) return 'locked'
     const have = remaining(h, players, spent)[t]
     const g = given(h, t)
@@ -117,6 +122,17 @@ export function spend(spent: Spent, allocation: Allocation): Spent {
   return next
 }
 
+/**
+ * Can the group pay for this option at all? Every type it needs must be
+ * covered by what the players and the city bank have left together. (The
+ * city bank's lock only says *when* it can chip in, not whether.) Options the
+ * group can't afford are greyed out on the event card, so nobody gets stuck.
+ */
+export function canAfford(cost: Cost, players: Player[], spent: Spent): boolean {
+  const holders: Holder[] = [...players.map((p) => p.character), ...(hasCityBank(players) ? (['city'] as const) : [])]
+  return TOKEN_ORDER.every((t) => holders.reduce((sum, h) => sum + remaining(h, players, spent)[t], 0) >= costOf(cost, t))
+}
+
 // ---------------------------------------------------------------------------
 // The lake's metrics
 
@@ -138,3 +154,59 @@ export const METRIC_ROWS: { metric: Metric; label: string }[] = [
   { metric: 'reputation', label: 'reputation' },
   { metric: 'accessibility', label: 'social accessibility' },
 ]
+
+// ---------------------------------------------------------------------------
+// A whole game (rounds 1–15)
+// The tutorial is round 1. Each round draws the next card from the deck.
+// After rounds 5 and 10 every holder's tokens reset (spent is cleared).
+
+
+export type GameState = {
+  players: Player[]
+  /** The round being played now (1–15). 16 = the game is over. */
+  round: number
+  /** Event ids still in the deck, top card first */
+  deck: string[]
+  spent: Spent
+  metrics: Metrics
+}
+
+/** A random order (Fisher–Yates shuffle: swap each card with a random earlier one). */
+export function shuffle<T>(items: T[]): T[] {
+  const out = [...items]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
+/** After the tutorial: round 2, the other 14 cards shuffled, tutorial spending kept. */
+export function gameAfterTutorial(players: Player[], spent: Spent, metrics: Metrics): GameState {
+  return { players, round: 2, deck: shuffle(EVENTS.map((e) => e.id).filter((id) => id !== TUTORIAL_EVENT_ID)), spent, metrics }
+}
+
+/** "restart game": round 1, full tokens, all 15 cards shuffled, metrics at 0. */
+export function freshGame(players: Player[]): GameState {
+  return { players, round: 1, deck: shuffle(EVENTS.map((e) => e.id)), spent: {}, metrics: startingMetrics() }
+}
+
+export function topCard(game: GameState) {
+  return EVENTS.find((e) => e.id === game.deck[0])
+}
+
+export function isGameOver(game: GameState): boolean {
+  return game.round > TOTAL_ROUNDS || game.deck.length === 0
+}
+
+/** Finish a round: spend the tokens, change the metrics, discard the card, maybe reset tokens. */
+export function finishRound(game: GameState, allocation: Allocation, effect: Effect): GameState {
+  const reset = isResetAfter(game.round)
+  return {
+    ...game,
+    round: game.round + 1,
+    deck: game.deck.slice(1),
+    spent: reset ? {} : spend(game.spent, allocation),
+    metrics: applyEffect(game.metrics, effect),
+  }
+}

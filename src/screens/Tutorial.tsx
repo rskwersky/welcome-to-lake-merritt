@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { Board, DimOverlay, EventDeck, PlayerRoster, RoundCounter, ScoreTracker } from '../components/board/GameBoard'
-import { starSlotCenter } from '../components/board/trackerLayout'
+import { measureFlights } from '../components/popups/flights'
 import { AllocateTokensPopup } from '../components/popups/AllocateTokensPopup'
 import { EventCardPopup } from '../components/popups/EventCardPopup'
 import { FlyingStars, MetricChangePopup, type Flight } from '../components/popups/MetricChangePopup'
@@ -8,7 +8,7 @@ import { SmallButton } from '../components/SmallButton'
 import { Stage } from '../components/Stage'
 import { Tip } from '../components/Tip'
 import { EVENTS } from '../data/events'
-import { TUTORIAL_EVENT_ID, pointsToStars, roundsUntilReset, type Metric } from '../data/gameRules'
+import { TUTORIAL_EVENT_ID, roundsUntilReset } from '../data/gameRules'
 import { applyEffect, hasCityBank, spend, startingMetrics, type Metrics, type Player, type Spent } from '../game/state'
 
 // Figma section "4 · tutorial": round 1, played with the players' help.
@@ -35,13 +35,6 @@ type TutorialProps = {
 
 type Step = 'draw' | 'event' | 'allocate' | 'metrics' | 'tokens' | 'ready'
 
-/** Screen px → stage px: the stage is scaled to fit the window. */
-function toStage(rect: DOMRect) {
-  const stage = document.querySelector('[data-stage]')!.getBoundingClientRect()
-  const scale = stage.width / 1440
-  return { x: (rect.left + rect.width / 2 - stage.left) / scale, y: (rect.top + rect.height / 2 - stage.top) / scale }
-}
-
 export function Tutorial({ players, onStart }: TutorialProps) {
   const [step, setStep] = useState<Step>('draw')
   const [selected, setSelected] = useState<number | null>(null)
@@ -51,22 +44,10 @@ export function Tutorial({ players, onStart }: TutorialProps) {
 
   const option = selected === null ? null : EVENT.options[selected]
 
-  // Step 6 → 7: every star in the popup flies to the next free slot on its
-  // metric's bar. (Metrics start at 0 in the tutorial; the real game will
-  // count the stars already there.)
+  // Step 6 → 7: every star in the popup flies to its slot in the tracker.
   const launchStars = () => {
-    const stars = [...document.querySelectorAll<HTMLElement>('[data-fly-star]')]
-    const next: Flight[] = stars.map((el) => {
-      const metric = el.dataset.flyStar as Metric
-      const negative = el.dataset.negative === 'true'
-      const already = Math.floor(Math.abs(pointsToStars(metrics[metric])))
-      return {
-        from: toStage(el.getBoundingClientRect()),
-        to: starSlotCenter(metric, already + Number(el.dataset.index), negative),
-        negative,
-        half: el.dataset.half === 'true',
-      }
-    })
+    if (!option) return
+    const next = measureFlights(metrics, option.effect)
     if (next.length === 0) landStars()
     else setFlights(next)
   }
@@ -83,7 +64,8 @@ export function Tutorial({ players, onStart }: TutorialProps) {
       <Board />
       <EventDeck raised={step === 'draw'} glow={step === 'draw'} onDraw={step === 'draw' ? () => setStep('event') : undefined} />
       <RoundCounter roundsUntilReset={roundsUntilReset(1)} raised={step === 'ready'} />
-      <ScoreTracker metrics={metrics} raised={step === 'metrics'} />
+      {/* Lit up only once the stars start flying to it */}
+      <ScoreTracker metrics={metrics} raised={step === 'metrics' && !!flights} />
       <PlayerRoster players={players} spent={spent} raised={step === 'tokens'} />
       <DimOverlay />
 
@@ -98,6 +80,7 @@ export function Tutorial({ players, onStart }: TutorialProps) {
           <Tip width={251.85}>Deliberate as a group and click an option to continue.</Tip>
           <EventCardPopup
             event={EVENT}
+            players={players}
             selected={selected}
             onSelect={setSelected}
             onContinue={() => setStep(option && Object.values(option.cost).some(Boolean) ? 'allocate' : 'metrics')}

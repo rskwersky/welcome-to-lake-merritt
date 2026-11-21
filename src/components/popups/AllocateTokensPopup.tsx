@@ -16,6 +16,7 @@ import { TokenIcon } from '../TokenIcon'
 //  • With fewer than 6 players there's a city bank row. A type's city box
 //    stays locked until every player has used up their own tokens of that
 //    type (docs/game-rules.md, "the city bank").
+//  • Token types the cost doesn't need are greyed out (no boxes to fill).
 //  • "continue" unlocks when every type is covered exactly.
 
 type AllocateTokensPopupProps = {
@@ -30,6 +31,8 @@ const BOX_STYLE: Record<InputState, string> = {
   complete: 'bg-done',
   error: 'bg-error',
   locked: 'bg-cream opacity-50',
+  // The cost doesn't use this type: greyed out so nobody types there
+  unneeded: 'bg-cream opacity-30',
 }
 
 /** One "typed / have" box: an input for the number, then "/have". */
@@ -48,7 +51,7 @@ function TokenBox({ value, have, state, label, onChange }: { value: number; have
         inputMode="numeric"
         aria-label={label}
         aria-invalid={state === 'error'}
-        disabled={state === 'locked'}
+        disabled={state === 'locked' || state === 'unneeded'}
         value={value === 0 ? '' : String(value)}
         placeholder="0"
         maxLength={2}
@@ -78,7 +81,7 @@ function TokenColumn({ holder, name, players, spent, allocation, check, setGiven
     <div className="flex gap-[6.95px]">
       <div className="flex flex-col gap-[3px] pt-[0.5px]">
         {TOKEN_ORDER.map((t) => (
-          <TokenIcon key={t} type={t} spent={check.input(holder, t) === 'locked'} />
+          <TokenIcon key={t} type={t} spent={check.input(holder, t) === 'locked' || check.input(holder, t) === 'unneeded'} />
         ))}
       </div>
       <div className="flex flex-col gap-[4.5px] pt-[1.5px]">
@@ -111,7 +114,10 @@ export function AllocateTokensPopup({ cost, players, spent, onContinue }: Alloca
 
   return (
     <div className="flex flex-col items-center gap-[22px]">
-      <div role="dialog" aria-label="Allocate tokens" className="flex w-[446.04px] animate-pop-in flex-col items-center gap-[15px] rounded-[7px] border border-ink-soft bg-cream px-[25px] py-[28px] motion-reduce:animate-none">
+      {/* Figma's popup (446px wide) was too small to read on screen, so it's
+          drawn 1.3× bigger. CSS `zoom` grows everything inside (tokens, boxes,
+          text) and, unlike a transform, also the space it takes up. */}
+      <div role="dialog" aria-label="Allocate tokens" style={{ zoom: 1.3 }} className="flex w-[446.04px] animate-pop-in flex-col items-center gap-[15px] rounded-[7px] border border-ink-soft bg-cream px-[25px] py-[28px] motion-reduce:animate-none">
         <div className="flex h-[50.48px] items-center gap-[2px] rounded-full border border-ink-soft bg-sky-blue px-[16.77px]" aria-label={`Cost: ${TOKEN_ORDER.filter((t) => cost[t]).map((t) => `${cost[t]} ${t}`).join(', ')}`}>
           {costTokens.map((tok, i) => (
             <TokenIcon key={i} type={tok.type} size={37} spent={tok.covered} className="drop-shadow-[0px_4px_4px_rgba(0,0,0,0.25)]" />
@@ -137,7 +143,7 @@ export function AllocateTokensPopup({ cost, players, spent, onContinue }: Alloca
           <div className="flex w-full items-center gap-[16px] rounded-[7px] border border-ink-soft px-[16px] py-[10px]">
             <p className="w-[60px] text-center font-mono text-[24px] leading-[1.05] text-ink italic">city bank</p>
             <TokenColumn holder="city" name="City bank" players={players} spent={spent} allocation={allocation} check={check} setGiven={setGiven} />
-            <p className="min-w-0 flex-1 font-mono text-[12px] leading-[1.15] text-ink-soft">
+            <p className="min-w-0 flex-1 font-mono text-[13px] leading-[1.2] text-ink-soft">
               Unlocks a token type once every player has used up their own tokens of that type.
             </p>
           </div>

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { getCharacter } from '../data/characters'
 import type { CharacterId } from '../data/gameRules'
+import { CardFrame } from './CardFrame'
 import { PlayerBadge } from './PlayerBadge'
 
 // Figma's `character-card` (284×365). Three states:
@@ -11,9 +12,8 @@ import { PlayerBadge } from './PlayerBadge'
 //                 as the postcard).
 //  • taken:       someone picked it: darkened, with their player badge.
 //
-// Each card is built from the blank card art (frame + name), a light band
-// that covers the stats strip at the bottom, and either the picture or the
-// text on top. The numbers are Figma's, per character.
+// Each side is the shared card frame (CardFrame: border, name, inside
+// color; the same for every character) with the picture or the text on top.
 
 const A = '/assets/characters'
 
@@ -29,61 +29,27 @@ function Pic({ box, src, fit = 'object-cover' }: { box: string; src: string; fit
   )
 }
 
-type Art = {
-  /** corner radius of the card art */
-  radius: string
-  /** the light band over the stats strip: position (% of the card) and corners */
-  band: string
-  /** the picture on the front */
-  picture: ReactNode
+// Each character's picture on the front, placed in % of the card (Figma's numbers).
+const PICTURE: Record<CharacterId, ReactNode> = {
+  organizer: <Pic box="inset-[23.68%_27.5%_14.81%_28.79%]" src="icon-organizer.svg" fit="block" />,
+  recreationist: <Pic box="inset-[17.28%_3.74%_3.19%_3.74%]" src="icon-recreationist.png" />,
+  protector: <Pic box="top-[112px] right-[19.9%] left-[19.9%] aspect-[237/257]" src="icon-protector.png" />,
+  environmentalist: <Pic box="top-[32.44px] right-[4.4%] left-[4.4%] aspect-[440/566]" src="icon-environmentalist.png" />,
+  // The house picture has empty space around it, so it's cropped: shown
+  // larger inside a smaller box that hides what spills out.
+  citizen: (
+    <div className="absolute top-[96px] left-[48px] h-[178px] w-[189px] overflow-hidden rounded-[39px]">
+      <img alt="" src={`${A}/icon-citizen.png`} className="absolute top-[-27.74%] left-[-22.11%] h-[188.32%] w-[142.84%] max-w-none" />
+    </div>
+  ),
+  educator: <Pic box="inset-[17.4%_6.83%_8.22%_6.81%]" src="icon-educator.svg" fit="block" />,
 }
 
-const ART: Record<CharacterId, Art> = {
-  organizer: {
-    radius: 'rounded-[13px]',
-    band: 'inset-[72.7%_2.24%_2.9%_2.26%] rounded-b-[5px] bg-card-organizer',
-    picture: <Pic box="inset-[23.68%_27.5%_14.81%_28.79%]" src="icon-organizer.svg" fit="block" />,
-  },
-  recreationist: {
-    radius: 'rounded-[20px]',
-    band: 'inset-[75.76%_2.2%_3.19%_2.12%] rounded-b-[5px] bg-card-recreationist',
-    picture: <Pic box="inset-[17.28%_3.74%_3.19%_3.74%]" src="icon-recreationist.png" />,
-  },
-  protector: {
-    radius: 'rounded-[20px]',
-    band: 'inset-[73.53%_2.12%_3.11%_1.95%] rounded-b-[11px] bg-card-protector',
-    picture: <Pic box="top-[112px] right-[19.9%] left-[19.9%] aspect-[237/257]" src="icon-protector.png" />,
-  },
-  environmentalist: {
-    radius: 'rounded-[20px]',
-    band: 'inset-[73.66%_1.8%_2.98%_1.8%] rounded-b-[11px] bg-card-environmentalist',
-    picture: <Pic box="top-[32.44px] right-[4.4%] left-[4.4%] aspect-[440/566]" src="icon-environmentalist.png" />,
-  },
-  citizen: {
-    radius: 'rounded-[20px]',
-    band: 'inset-[72.16%_2.03%_3.43%_2%] rounded-b-[6px] bg-card-citizen',
-    // The house picture has empty space around it, so it's cropped: shown
-    // larger inside a smaller box that hides what spills out.
-    picture: (
-      <div className="absolute top-[96px] left-[48px] h-[178px] w-[189px] overflow-hidden rounded-[39px]">
-        <img alt="" src={`${A}/icon-citizen.png`} className="absolute top-[-27.74%] left-[-22.11%] h-[188.32%] w-[142.84%] max-w-none" />
-      </div>
-    ),
-  },
-  educator: {
-    radius: 'rounded-[20px]',
-    band: 'inset-[71.21%_2.08%_3.82%_2.07%] rounded-b-[6px] bg-card-educator',
-    picture: <Pic box="inset-[17.4%_6.83%_8.22%_6.81%]" src="icon-educator.svg" fit="block" />,
-  },
-}
-
-/** One side of the card. Both sides share the card art and the band. */
+/** One side of the card: the shared frame (CardFrame), then this side's contents. */
 function Face({ id, back, children }: { id: CharacterId; back?: boolean; children: ReactNode }) {
-  const art = ART[id]
   return (
     <div className={`absolute inset-0 backface-hidden ${back ? 'rotate-y-180' : ''}`}>
-      <img alt="" src={`${A}/card-${id}.jpg`} className={`absolute inset-0 size-full max-w-none object-cover ${art.radius}`} draggable={false} />
-      <div className={`absolute ${art.band}`} />
+      <CardFrame id={id} />
       {children}
     </div>
   )
@@ -120,9 +86,11 @@ type CharacterCardProps = {
   onPick?: () => void
   /** Called when the badge is clicked */
   onBadgeClick?: () => void
+  /** Show the description side (explore mode opens a card this way) */
+  side?: 'front' | 'description'
 }
 
-export function CharacterCard({ id, badge, taken = false, onPick, onBadgeClick }: CharacterCardProps) {
+export function CharacterCard({ id, badge, taken = false, onPick, onBadgeClick, side = 'front' }: CharacterCardProps) {
   const { name } = getCharacter(id)
   const canPick = !!onPick && !taken
 
@@ -135,15 +103,15 @@ export function CharacterCard({ id, badge, taken = false, onPick, onBadgeClick }
         disabled={!canPick}
         aria-label={canPick ? `Choose ${name}${badge ? ` (Player ${badge} has it)` : ''}` : badge ? `${name}, picked by Player ${badge}` : name}
         aria-describedby={`character-${id}-description`}
-        className="group perspective-[1600px] block size-full cursor-pointer rounded-[20px] drop-shadow-[-4px_4px_1px_rgba(0,0,0,0.25)] focus-visible:outline-3 focus-visible:outline-offset-6 focus-visible:outline-ink disabled:cursor-default"
+        className="group perspective-[1600px] block size-full cursor-pointer rounded-[16px] drop-shadow-[-4px_4px_1px_rgba(0,0,0,0.25)] focus-visible:outline-3 focus-visible:outline-offset-6 focus-visible:outline-ink disabled:cursor-default"
       >
         {/* The two faces turn together. Only cards that can be picked flip. */}
         <div
           className={`relative size-full transform-3d transition-transform duration-500 ease-in-out motion-reduce:duration-0 ${
-            canPick ? 'group-hover:rotate-y-180 group-focus-visible:rotate-y-180' : ''
+            side === 'description' ? 'rotate-y-180' : canPick ? 'group-hover:rotate-y-180 group-focus-visible:rotate-y-180' : ''
           }`}
         >
-          <Face id={id}>{ART[id].picture}</Face>
+          <Face id={id}>{PICTURE[id]}</Face>
           <Face id={id} back>
             <Description id={id} />
           </Face>
@@ -152,7 +120,7 @@ export function CharacterCard({ id, badge, taken = false, onPick, onBadgeClick }
             picked it first flips back to its picture (500ms), so the darkening
             waits 450ms before fading in. Freeing a card clears it right away. */}
         <div
-          className={`pointer-events-none absolute inset-0 rounded-[13px] bg-ink-soft transition-opacity motion-reduce:delay-0 motion-reduce:duration-0 ${
+          className={`pointer-events-none absolute inset-0 rounded-[16px] bg-ink-soft transition-opacity motion-reduce:delay-0 motion-reduce:duration-0 ${
             taken ? 'opacity-25 delay-450 duration-200' : 'opacity-0 duration-150'
           }`}
         />
