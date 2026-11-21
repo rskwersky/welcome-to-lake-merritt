@@ -1,58 +1,43 @@
 import { useState } from 'react'
-import type { CharacterId } from './data/characters'
-import { historyLong, historyShort } from './data/history'
-import { CharacterSelect } from './screens/CharacterSelect'
-import { ChooseLength } from './screens/ChooseLength'
-import { Confirmed } from './screens/Confirmed'
+import { historyShort } from './data/history'
+import { GameOverview } from './screens/GameOverview'
 import { History } from './screens/History'
 import { Landing } from './screens/Landing'
+import { NotBuiltYet } from './screens/NotBuiltYet'
 
-// The whole intro flow is a tiny "state machine": one piece of state says
-// which screen is showing, and each screen gets callbacks to move to the next.
+// The app is a tiny "state machine": one piece of state says which screen is
+// showing, and each screen gets callbacks to move to the next. The order
+// follows the numbered Figma sections.
 //
-//   landing ──learn more──▶ choose-length ──▶ history-long / history-short ──┐
-//      └──────play game──────────────────────────────────────────────────────┴─▶ character-select ──▶ confirmed
+//   1 · intro:  01 game overview ─play game─▶ 02 landing ─click postcard─▶ 03 did you know
+//               ─learn more─▶ 04 history / short ─continue─▶ 05 how to play (section 2, not built yet)
+//
+// 02 and 03 are one screen (Landing): 03 is just 02 with the postcard flipped.
+// The old character select (CharacterSelect, Confirmed) is no longer in the
+// flow; it follows an older design and will be rebuilt in section 3.
 
 type Screen =
+  | { name: 'game-overview' }
   | { name: 'landing' }
-  | { name: 'choose-length' }
-  | { name: 'history'; length: 'long' | 'short' }
-  | { name: 'character-select' }
-  | { name: 'confirmed'; characterId: CharacterId }
+  | { name: 'history-short' }
+  | { name: 'how-to-play' }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>({ name: 'landing' })
+  const [screen, setScreen] = useState<Screen>({ name: 'game-overview' })
 
   switch (screen.name) {
+    case 'game-overview':
+      return <GameOverview onPlay={() => setScreen({ name: 'landing' })} />
     case 'landing':
-      return (
-        <Landing
-          onLearnMore={() => setScreen({ name: 'choose-length' })}
-          onPlay={() => setScreen({ name: 'character-select' })}
-        />
-      )
-    case 'choose-length':
-      return (
-        <ChooseLength
-          onLong={() => setScreen({ name: 'history', length: 'long' })}
-          onShort={() => setScreen({ name: 'history', length: 'short' })}
-        />
-      )
-    case 'history':
+      return <Landing onLearnMore={() => setScreen({ name: 'history-short' })} />
+    case 'history-short':
       return (
         <History
-          paragraphs={screen.length === 'long' ? historyLong : historyShort}
-          onPlay={() => setScreen({ name: 'character-select' })}
+          paragraphs={historyShort}
+          button={{ label: 'continue', width: 202, onClick: () => setScreen({ name: 'how-to-play' }) }}
         />
       )
-    case 'character-select':
-      return <CharacterSelect onConfirm={(id) => setScreen({ name: 'confirmed', characterId: id })} />
-    case 'confirmed':
-      return (
-        <Confirmed
-          characterId={screen.characterId}
-          onChooseAgain={() => setScreen({ name: 'character-select' })}
-        />
-      )
+    case 'how-to-play':
+      return <NotBuiltYet screenName="05 how to play" onRestart={() => setScreen({ name: 'game-overview' })} />
   }
 }

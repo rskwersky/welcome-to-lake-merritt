@@ -28,7 +28,13 @@ export function Postcard({ flipped, onClick }: PostcardProps) {
       onClick={onClick}
       disabled={!onClick}
       aria-label={flipped ? 'Did you know: Lake Merritt in Oakland, California is the oldest wildlife refuge in North America?' : 'Greetings from Lake Merritt. Flip the postcard'}
-      className="perspective-[1600px] block shrink-0 cursor-pointer rounded-[10px] focus-visible:outline-3 focus-visible:outline-offset-8 focus-visible:outline-ink disabled:cursor-default"
+      // Hover (only while it can still be clicked): it rises 12px, grows 3%,
+      // tilts a hair, and its shadow spreads out below, like a card picked up
+      // off the table. This is the first thing people click, so the cue is
+      // stronger than the small lift on the other objects.
+      // drop-shadow follows the card's rounded shape, unlike box-shadow.
+      // With reduced motion, only the shadow changes (no movement).
+      className="perspective-[1600px] block shrink-0 cursor-pointer rounded-[10px] transition-[translate,scale,rotate,filter] duration-300 ease-out focus-visible:outline-3 focus-visible:outline-offset-8 focus-visible:outline-ink enabled:hover:-translate-y-3 enabled:hover:scale-[1.03] enabled:hover:-rotate-1 enabled:hover:drop-shadow-[-4px_18px_16px_rgba(0,0,0,0.28)] disabled:cursor-default motion-reduce:transition-none motion-reduce:enabled:hover:translate-y-0 motion-reduce:enabled:hover:scale-100 motion-reduce:enabled:hover:rotate-0"
       style={{ width: POSTCARD_WIDTH, height: POSTCARD_HEIGHT }}
     >
       <div

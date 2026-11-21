@@ -10,6 +10,9 @@
   --color-ink: #0f1028;
   --color-ink-soft: #0f132c;
 
+  /* Warm light on the game overview table */
+  --color-peach: #fbdda5;
+
   /* Sky gradient stops (landing + history screens) */
   --color-sky-blue: #8fb1be;
   --color-sky-sage: #97beb5;
@@ -25,7 +28,7 @@
   --color-educator: #a9b0ff;
 
   --font-mono: "Courier Prime", ui-monospace, monospace;
-  --font-script: "Boucherie Cursive", "Dancing Script", cursive;
+  --font-script: "boucherie-cursive", "Dancing Script", cursive;
 
   /* Character card pop-in → use with the class "animate-card-in" */
   --animate-card-in: card-in 250ms ease-out;
@@ -33,13 +36,6 @@
     from { opacity: 0; transform: translateY(12px) scale(0.97); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
-}
-
-/* If you add the Boucherie Cursive font file to public/fonts, this picks it up. */
-@font-face {
-  font-family: "Boucherie Cursive";
-  src: url("/fonts/BoucherieCursive.woff2") format("woff2");
-  font-display: swap;
 }
 
 html,
@@ -54,6 +50,28 @@ body {
   color: var(--color-ink);
   background: var(--color-cream);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Warm diagonal light from the "01 game overview" frame: peach in the top
+   left, fading to cream in the bottom right. */
+.bg-overview {
+  background-image: linear-gradient(126.26deg, var(--color-peach) 37.346%, var(--color-cream) 92.677%);
+}
+
+/* The game board on the overview table: a sunset glow in the middle,
+   fading out to sage green at the edges (Figma: radial gradient, 8 stops). */
+.bg-board {
+  background-image: radial-gradient(
+    circle 367.5px at center,
+    var(--color-sky-orange) 0%,
+    #f29b41 14.904%,
+    var(--color-sky-gold) 27.885%,
+    #ecbb5b 45.192%,
+    #cebc7b 57.452%,
+    #b1bd9b 69.712%,
+    #a4bea8 87.019%,
+    var(--color-sky-sage) 100%
+  );
 }
 
 /* The sunset gradient from the Figma "background" layer (screens 01–04) */

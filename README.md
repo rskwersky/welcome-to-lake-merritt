@@ -1,11 +1,12 @@
 # Welcome to Lake Merritt
 
-A 6-player roleplaying game about who cares for Oakland's Lake Merritt, built from
+A roleplaying game for 1–6 players about who cares for Oakland's Lake Merritt, built from
 interviews with real Oakland organizers and residents. No one can win: stewardship
 is never finished, and compromise is inevitable.
 
-This repo is the web prototype of the game's intro: the postcard landing, the
-history of the lake, and character select. Designed in Figma, built with
+This repo is the web version of the game, built one Figma section at a time.
+Done so far: **1 · intro** (game overview, postcard landing, history).
+The full rules are in `docs/game-rules.md`. Designed in Figma, built with
 **React + TypeScript + Tailwind CSS**, bundled with **Vite**.
 
 ## Run it
@@ -37,17 +38,20 @@ Other commands:
 ## The flow
 
 ```
-landing ──learn more──▶ choose length ──▶ history (long / short) ──┐
-   └──────────play game───────────────────────────────────────────┴─▶ character select ──▶ confirmed
+01 game overview ──play game──▶ 02 landing ──click postcard──▶ 03 did you know
+  ──learn more──▶ 04 history / short ──continue──▶ 05 how to play (not built yet)
 ```
 
 | Figma frame | Code |
 | --- | --- |
-| 01 landing, 02 fact card, 03 learn more or play | `src/screens/Landing.tsx` |
-| 04 choose history length | `src/screens/ChooseLength.tsx` |
-| 05 history / long, 05 history / short | `src/screens/History.tsx` |
-| 06 character select / … | `src/screens/CharacterSelect.tsx` |
-| (next screen, not designed yet) | `src/screens/Confirmed.tsx` (placeholder) |
+| 01 game overview | `src/screens/GameOverview.tsx` |
+| 02 landing, 03 did you know | `src/screens/Landing.tsx` (03 is 02 with the postcard flipped) |
+| 04 history / short, 04 history / long (from the game menu, later) | `src/screens/History.tsx` |
+| 05 how to play and later | `src/screens/NotBuiltYet.tsx` (placeholder) |
+
+`CharacterSelect.tsx`, `CharacterIcon.tsx`, `CharacterCard.tsx` and `Confirmed.tsx`
+follow the older character-select design. They're out of the flow for now and
+will be rebuilt in section 3.
 
 ## How the code is organized
 
@@ -56,6 +60,8 @@ src/
   App.tsx              Which screen is showing (a small state machine)
   index.css            Tailwind + design tokens (colors, fonts) from Figma
   data/
+    gameRules.ts       Starting tokens, resets, city bank, score tracker (balance-tested)
+    events.ts          The 15 event cards
     characters.ts      All six characters: text, colors, images, card positions
     history.ts         The long and short history, one string per paragraph
   components/
@@ -93,9 +99,9 @@ scripts/
 
 ## Known gaps
 
-- **Script font:** Figma uses *Boucherie Cursive*. If you have the font file, save it
-  as `public/fonts/BoucherieCursive.woff2` and it's used automatically. Until then,
-  *Dancing Script* (Google Fonts) stands in.
+- **Script font:** *Boucherie Cursive* is an Adobe Font, loaded from the Adobe web
+  project in `index.html`. Adobe only serves it to domains listed in that web project,
+  so add the deploy domain there. *Dancing Script* shows if it can't load.
 - **Select-button colors** for the Environmentalist (green), Citizen (blue), and
   Educator (periwinkle) were matched by best guess. Adjust them in `src/index.css`.
 - **Phones:** the stage-scaled screens shrink to fit, which works but gets small on

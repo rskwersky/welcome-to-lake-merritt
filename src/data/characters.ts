@@ -1,13 +1,10 @@
 // All six characters live here as data. The UI reads from this list, so to
 // change a description, color, or image you only edit this file.
 
-export type CharacterId =
-  | 'protector'
-  | 'recreationist'
-  | 'organizer'
-  | 'environmentalist'
-  | 'citizen'
-  | 'educator'
+// CharacterId is defined once, in gameRules.ts, next to the starting tokens.
+// We import it here and pass it on, so older imports from this file keep working.
+import type { CharacterId } from './gameRules'
+export type { CharacterId }
 
 // Where the character's card appears on the 1440×1024 character-select screen,
 // measured from the Figma frames ("card-slot" x/y).
