@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import type { CharacterId } from './data/gameRules'
 import { historyShort } from './data/history'
+import { CharacterSelect } from './screens/CharacterSelect'
 import { GameOverview } from './screens/GameOverview'
 import { History } from './screens/History'
 import { HowToPlay } from './screens/HowToPlay'
@@ -14,11 +16,10 @@ import { PlayerCount } from './screens/PlayerCount'
 //   1 · intro:  01 game overview ─play game─▶ 02 landing ─click postcard─▶ 03 did you know
 //               ─learn more─▶ 04 history / short ─continue─▶
 //   2 · setup:  05 how to play ─continue─▶ 06 player count ─continue─▶
-//   3 · character select (not built yet; repeats once per player)
+//   3 · character select (players take turns) ─continue─▶
+//   4 · tutorial (not built yet)
 //
 // 02 and 03 are one screen (Landing): 03 is just 02 with the postcard flipped.
-// The old character select (CharacterSelect, Confirmed) is no longer in the
-// flow; it follows an older design and will be rebuilt in section 3.
 
 type Screen =
   | { name: 'game-overview' }
@@ -27,12 +28,15 @@ type Screen =
   | { name: 'how-to-play' }
   | { name: 'player-count' }
   | { name: 'character-select' }
+  | { name: 'tutorial' }
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'game-overview' })
   // Remembered across screens: character select needs it, and "restart game"
   // will bring it back pre-selected.
   const [playerCount, setPlayerCount] = useState<number | undefined>()
+  // picks[0] is Player 1's character, and so on.
+  const [picks, setPicks] = useState<CharacterId[] | undefined>()
 
   switch (screen.name) {
     case 'game-overview':
@@ -60,8 +64,21 @@ export default function App() {
       )
     case 'character-select':
       return (
+        <CharacterSelect
+          // A new key when the count changes starts the picks over.
+          key={playerCount}
+          playerCount={playerCount ?? 1}
+          initialPicks={picks?.length === playerCount ? picks : undefined}
+          onContinue={(chosen) => {
+            setPicks(chosen)
+            setScreen({ name: 'tutorial' })
+          }}
+        />
+      )
+    case 'tutorial':
+      return (
         <NotBuiltYet
-          screenName={`07 character select (${playerCount} ${playerCount === 1 ? 'player' : 'players'})`}
+          screenName={`08 tutorial (${picks?.map((id, i) => `P${i + 1} ${id}`).join(', ')})`}
           onRestart={() => setScreen({ name: 'game-overview' })}
         />
       )

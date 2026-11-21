@@ -5,8 +5,8 @@ interviews with real Oakland organizers and residents. No one can win: stewardsh
 is never finished, and compromise is inevitable.
 
 This repo is the web version of the game, built one Figma section at a time.
-Done so far: **1 · intro** (game overview, postcard landing, history) and
-**2 · setup** (game manual, player count).
+Done so far: **1 · intro** (game overview, postcard landing, history),
+**2 · setup** (game manual, player count) and **3 · character select**.
 The full rules are in `docs/game-rules.md`. Designed in Figma, built with
 **React + TypeScript + Tailwind CSS**, bundled with **Vite**.
 
@@ -41,7 +41,8 @@ Other commands:
 ```
 01 game overview ──play game──▶ 02 landing ──click postcard──▶ 03 did you know
   ──learn more──▶ 04 history / short ──continue──▶ 05 how to play (manual)
-  ──continue──▶ 06 player count ──continue──▶ 07 character select (not built yet)
+  ──continue──▶ 06 player count ──continue──▶ 07 character select (once per player)
+  ──continue──▶ 08 tutorial (not built yet)
 ```
 
 | Figma frame | Code |
@@ -51,11 +52,8 @@ Other commands:
 | 04 history / short, 04 history / long (from the game menu, later) | `src/screens/History.tsx` |
 | 05 how to play (manual, scrolls sideways) | `src/screens/HowToPlay.tsx` |
 | 06 player count / default, / selected | `src/screens/PlayerCount.tsx` |
-| 07 character select and later | `src/screens/NotBuiltYet.tsx` (placeholder) |
-
-`CharacterSelect.tsx`, `CharacterIcon.tsx`, `CharacterCard.tsx` and `Confirmed.tsx`
-follow the older character-select design. They're out of the flow for now and
-will be rebuilt in section 3.
+| 07 character select / … | `src/screens/CharacterSelect.tsx` |
+| 08 tutorial and later | `src/screens/NotBuiltYet.tsx` (placeholder) |
 
 ## How the code is organized
 
@@ -66,7 +64,7 @@ src/
   data/
     gameRules.ts       Starting tokens, resets, city bank, score tracker (balance-tested)
     events.ts          The 15 event cards
-    characters.ts      All six characters: text, colors, images, card positions
+    characters.ts      The six characters' descriptions and goals
     manual.ts          The words on the game manual pages
     history.ts         The long and short history, one string per paragraph
   components/
@@ -74,8 +72,9 @@ src/
     Button.tsx         The cream / colored button
     Postcard.tsx       The flip card (CSS 3D, no library)
     CharacterToken.tsx The small round character icon
-    CharacterIcon.tsx  One icon in the grid: default / active / dimmed
-    CharacterCard.tsx  A character card: Figma image + live text
+    CharacterCard.tsx  A character card: picture side, description side, taken
+    PlayerBadge.tsx    The P1–P6 tag
+    SmallButton.tsx    The small button (turns gold on hover)
   hooks/
     useInView.ts       "Has this scrolled into view?" — drives the history fade-ins
   screens/             One file per screen (see table above)
@@ -98,18 +97,17 @@ scripts/
 
 ## Character select behavior
 
-- Click an icon: it lifts with a glow, the other five dim, and its card appears.
-- Click anywhere outside the card (or press **Esc**) to deselect.
-- Click a different icon to switch characters directly.
-- **select** under the card confirms the character.
+- Players take turns: "Player 1, choose your character:", then Player 2, and so on.
+- Hover (or tab to) a card: it flips over to show who they are and their goals.
+- Click a card: it's yours. It darkens and gets your badge (P1–P6).
+- When everyone has picked, **continue** appears. Click a badge to let that
+  player choose again.
 
 ## Known gaps
 
 - **Script font:** *Boucherie Cursive* is an Adobe Font, loaded from the Adobe web
   project in `index.html`. Adobe only serves it to domains listed in that web project,
   so add the deploy domain there. *Dancing Script* shows if it can't load.
-- **Select-button colors** for the Environmentalist (green), Citizen (blue), and
-  Educator (periwinkle) were matched by best guess. Adjust them in `src/index.css`.
 - **Phones:** the stage-scaled screens shrink to fit, which works but gets small on
   phones. The history page is fully responsive.
 
