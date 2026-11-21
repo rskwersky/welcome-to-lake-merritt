@@ -6,7 +6,8 @@ is never finished, and compromise is inevitable.
 
 This repo is the web version of the game, built one Figma section at a time.
 Done so far: **1 · intro** (game overview, postcard landing, history),
-**2 · setup** (game manual, player count) and **3 · character select**.
+**2 · setup** (game manual, player count), **3 · character select** and
+**4 · tutorial** (round 1 on the game board).
 The full rules are in `docs/game-rules.md`. Designed in Figma, built with
 **React + TypeScript + Tailwind CSS**, bundled with **Vite**.
 
@@ -36,13 +37,29 @@ Other commands:
 > re-export the assets listed in `scripts/fetch-assets.mjs`. Each entry lists the
 > Figma node it came from.
 
+## Jump to a screen while testing
+
+With `npm run dev` running, add `?screen=` to the address to open a screen
+directly, with made-up players (only in development, never on the built site):
+
+| Address | Opens |
+| --- | --- |
+| `localhost:5173/?screen=tutorial` | the tutorial with 6 players |
+| `localhost:5173/?screen=tutorial&players=4` | the tutorial with 4 players (city bank shows) |
+| `localhost:5173/?screen=tutorial&characters=citizen,organizer` | exactly these characters, as P1 and P2 |
+| `localhost:5173/?screen=character-select&players=3` | character select for 3 players |
+| `localhost:5173/?screen=how-to-play` | the game manual |
+
+Screen names: `game-overview`, `landing`, `history-short`, `how-to-play`,
+`player-count`, `character-select`, `tutorial`, `game`. See `src/devStart.ts`.
+
 ## The flow
 
 ```
 01 game overview ──play game──▶ 02 landing ──click postcard──▶ 03 did you know
   ──learn more──▶ 04 history / short ──continue──▶ 05 how to play (manual)
   ──continue──▶ 06 player count ──continue──▶ 07 character select (once per player)
-  ──continue──▶ 08 tutorial (not built yet)
+  ──continue──▶ 08 tutorial / 1–8 ──start game──▶ 09 game board (not built yet)
 ```
 
 | Figma frame | Code |
@@ -53,7 +70,8 @@ Other commands:
 | 05 how to play (manual, scrolls sideways) | `src/screens/HowToPlay.tsx` |
 | 06 player count / default, / selected | `src/screens/PlayerCount.tsx` |
 | 07 character select / … | `src/screens/CharacterSelect.tsx` |
-| 08 tutorial and later | `src/screens/NotBuiltYet.tsx` (placeholder) |
+| 08 tutorial / 1–8 (and 4b, city bank) | `src/screens/Tutorial.tsx` |
+| 09 game board and later | `src/screens/NotBuiltYet.tsx` (placeholder) |
 
 ## How the code is organized
 
@@ -73,8 +91,14 @@ src/
     Postcard.tsx       The flip card (CSS 3D, no library)
     CharacterToken.tsx The small round character icon
     CharacterCard.tsx  A character card: picture side, description side, taken
-    PlayerBadge.tsx    The P1–P6 tag
-    SmallButton.tsx    The small button (turns gold on hover)
+    PlayerBadge.tsx    The P1–P6 tag (large on cards, small on the board)
+    SmallButton.tsx    The small button (turns gold on hover, greyed when disabled)
+    TokenIcon.tsx      One social / economic / political token
+    Tip.tsx            The tutorial's tip box and arrow button
+    board/             The game board: map, deck, round counter, score tracker, roster
+    popups/            Event card, allocate tokens, metric change
+  game/
+    state.ts           Game logic: who holds which tokens, the city bank rule, metrics
   hooks/
     useInView.ts       "Has this scrolled into view?" — drives the history fade-ins
   screens/             One file per screen (see table above)

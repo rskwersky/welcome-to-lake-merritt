@@ -8,6 +8,9 @@ import { HowToPlay } from './screens/HowToPlay'
 import { Landing } from './screens/Landing'
 import { NotBuiltYet } from './screens/NotBuiltYet'
 import { PlayerCount } from './screens/PlayerCount'
+import { Tutorial } from './screens/Tutorial'
+import { playersFromPicks } from './game/state'
+import { readDevStart, type ScreenName } from './devStart'
 
 // The app is a tiny "state machine": one piece of state says which screen is
 // showing, and each screen gets callbacks to move to the next. The order
@@ -17,26 +20,24 @@ import { PlayerCount } from './screens/PlayerCount'
 //               ─learn more─▶ 04 history / short ─continue─▶
 //   2 · setup:  05 how to play ─continue─▶ 06 player count ─continue─▶
 //   3 · character select (players take turns) ─continue─▶
-//   4 · tutorial (not built yet)
+//   4 · tutorial (round 1, steps 1–8) ─start game─▶
+//   5 · game board (not built yet)
 //
 // 02 and 03 are one screen (Landing): 03 is just 02 with the postcard flipped.
 
-type Screen =
-  | { name: 'game-overview' }
-  | { name: 'landing' }
-  | { name: 'history-short' }
-  | { name: 'how-to-play' }
-  | { name: 'player-count' }
-  | { name: 'character-select' }
-  | { name: 'tutorial' }
+type Screen = { name: ScreenName }
+
+// While developing, "?screen=tutorial" (and friends) in the URL opens that
+// screen directly, with made-up players. See src/devStart.ts.
+const devStart = readDevStart()
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>({ name: 'game-overview' })
+  const [screen, setScreen] = useState<Screen>({ name: devStart?.screen ?? 'game-overview' })
   // Remembered across screens: character select needs it, and "restart game"
   // will bring it back pre-selected.
-  const [playerCount, setPlayerCount] = useState<number | undefined>()
+  const [playerCount, setPlayerCount] = useState<number | undefined>(devStart?.playerCount)
   // picks[0] is Player 1's character, and so on.
-  const [picks, setPicks] = useState<CharacterId[] | undefined>()
+  const [picks, setPicks] = useState<CharacterId[] | undefined>(devStart?.picks)
 
   switch (screen.name) {
     case 'game-overview':
@@ -76,11 +77,8 @@ export default function App() {
         />
       )
     case 'tutorial':
-      return (
-        <NotBuiltYet
-          screenName={`08 tutorial (${picks?.map((id, i) => `P${i + 1} ${id}`).join(', ')})`}
-          onRestart={() => setScreen({ name: 'game-overview' })}
-        />
-      )
+      return <Tutorial players={playersFromPicks(picks ?? [])} onStart={() => setScreen({ name: 'game' })} />
+    case 'game':
+      return <NotBuiltYet screenName="09 game board (round 2)" onRestart={() => setScreen({ name: 'game-overview' })} />
   }
 }
