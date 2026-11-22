@@ -1,20 +1,24 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BEYOND_STAGE, Board, DimOverlay, EventDeck, PlayerRoster, RoundCounter, ScoreTracker } from '../components/board/GameBoard'
+import { BEYOND_STAGE, Board, DimOverlay, EventDeck, PlayerRoster, RoundCounter, ScoreTracker, TotalRounds } from '../components/board/GameBoard'
 import { GameMenu } from '../components/board/GameMenu'
 import { ManualArt } from '../components/board/ManualArt'
 import { PlayerCards } from '../components/board/PlayerCards'
 import { CharacterCard } from '../components/CharacterCard'
+import { FeedbackForm } from '../components/FeedbackForm'
 import { AllocateTokensPopup } from '../components/popups/AllocateTokensPopup'
 import { EventCardPopup } from '../components/popups/EventCardPopup'
 import { CityBankInfo, ManualPopup, NewGameConfirm, PhotoPopup } from '../components/popups/ExplorePopups'
 import { measureFlights } from '../components/popups/flights'
 import { FlyingStars, MetricChangePopup, type Flight } from '../components/popups/MetricChangePopup'
+import { GameEnd } from '../components/popups/GameEnd'
 import { SmallButton } from '../components/SmallButton'
 import { Stage } from '../components/Stage'
 import { STAR_PHOTOS, type MapStarId } from '../data/explore'
 import type { CharacterId } from '../data/gameRules'
 import { roundsUntilReset } from '../data/gameRules'
+import { gameSummary } from '../game/debrief'
 import { canAfford, finishRound, isGameOver, topCard, type Allocation, type GameState } from '../game/state'
+import { feedbackAvailable } from '../feedback'
 
 // Figma section "5 · game board + explore mode".
 //
@@ -27,6 +31,10 @@ import { canAfford, finishRound, isGameOver, topCard, type Allocation, type Game
 // hover and open popups. Click outside a popup (or press Esc) to close it.
 // "play mode" goes back to exactly where the game was.
 //
+// After round 15 ("10 game ending + total round tracker"): the final report,
+// then the debrief one question at a time, then thank you + feedback
+// (components/popups/GameEnd.tsx). Explore mode is still open afterwards.
+//
 // The game itself (round, deck, tokens, metrics) lives in the App, so it
 // survives a trip to "learn more" and back.
 
@@ -35,7 +43,6 @@ type GameProps = {
   setGame: (game: GameState) => void
   onLearnMore: () => void
   onRestart: () => void
-  onGameOver: () => void
 }
 
 type Phase = 'board' | 'event' | 'allocate' | 'metrics'
@@ -45,19 +52,23 @@ type Popup =
   | { kind: 'city-bank' }
   | { kind: 'manual' }
   | { kind: 'new-game' }
+  | { kind: 'feedback' }
   | null
 
-export function Game({ game, setGame, onLearnMore, onRestart, onGameOver }: GameProps) {
+export function Game({ game, setGame, onLearnMore, onRestart }: GameProps) {
   const [mode, setMode] = useState<'play' | 'explore'>('play')
   const [phase, setPhase] = useState<Phase>('board')
   const [selected, setSelected] = useState<number | null>(null)
   const [allocation, setAllocation] = useState<Allocation>({})
   const [popup, setPopup] = useState<Popup>(null)
   const [flights, setFlights] = useState<Flight[] | null>(null)
+  // Which end card is showing once the game is over (0 = final report)
+  const [endStep, setEndStep] = useState(0)
 
   const card = topCard(game)
   const exploring = mode === 'explore'
   const option = card && selected !== null ? card.options[selected] : null
+  const over = isGameOver(game)
 
   // Load the star photos ahead of time, so a photo appears the moment its
   // star is clicked instead of after a download.
@@ -76,14 +87,13 @@ export function Game({ game, setGame, onLearnMore, onRestart, onGameOver }: Game
   // The round is over once the stars have landed.
   const landStars = useCallback(() => {
     setFlights(null)
-    if (!option) return
-    const next = finishRound(game, allocation, option.effect)
+    if (!option || selected === null) return
+    const next = finishRound(game, allocation, selected)
     setGame(next)
     setPhase('board')
     setSelected(null)
     setAllocation({})
-    if (isGameOver(next)) onGameOver()
-  }, [game, allocation, option, setGame, onGameOver])
+  }, [game, allocation, option, selected, setGame])
 
   const launchStars = () => {
     if (!option) return
@@ -93,6 +103,9 @@ export function Game({ game, setGame, onLearnMore, onRestart, onGameOver }: Game
   }
 
   const roundPopup = mode === 'play' && phase !== 'board'
+  // The end cards: in play mode once the last stars have landed (and not
+  // under another popup, like the new game question)
+  const showEnd = mode === 'play' && over && !flights && !popup
 
   return (
     <Stage className="bg-overview">
@@ -102,7 +115,9 @@ export function Game({ game, setGame, onLearnMore, onRestart, onGameOver }: Game
       {/* Explore mode hides the counter and tracker: the player cards take their place (as in Figma). */}
       {!exploring && (
         <>
-          <RoundCounter roundsUntilReset={roundsUntilReset(game.round)} />
+          <TotalRounds round={game.round} />
+          {/* Token resets mean nothing once the game is over */}
+          {!over && <RoundCounter roundsUntilReset={roundsUntilReset(game.round)} />}
           <ScoreTracker metrics={game.metrics} />
         </>
       )}
@@ -136,8 +151,8 @@ export function Game({ game, setGame, onLearnMore, onRestart, onGameOver }: Game
         <PlayerRoster
           players={game.players}
           spent={game.spent}
-          onCharacter={phase === 'board' ? (id) => setPopup({ kind: 'character', id }) : undefined}
-          onCityBank={phase === 'board' ? () => setPopup({ kind: 'city-bank' }) : undefined}
+          onCharacter={phase === 'board' && !over ? (id) => setPopup({ kind: 'character', id }) : undefined}
+          onCityBank={phase === 'board' && !over ? () => setPopup({ kind: 'city-bank' }) : undefined}
         />
       )}
 
@@ -145,6 +160,7 @@ export function Game({ game, setGame, onLearnMore, onRestart, onGameOver }: Game
         mode={mode}
         onNewGame={() => setPopup({ kind: 'new-game' })}
         onLearnMore={onLearnMore}
+        onFeedback={feedbackAvailable ? () => setPopup({ kind: 'feedback' }) : undefined}
         onToggleMode={() => {
           setPopup(null)
           setMode(exploring ? 'play' : 'explore')
@@ -153,7 +169,17 @@ export function Game({ game, setGame, onLearnMore, onRestart, onGameOver }: Game
 
       {/* ---- the round's popups (play mode) ---- */}
       {/* Fades out as the stars fly, so they land on a bright tracker */}
-      <DimOverlay visible={roundPopup && !flights} />
+      <DimOverlay visible={(roundPopup && !flights) || showEnd} />
+
+      {showEnd && (
+        <GameEnd
+          game={game}
+          step={endStep}
+          setStep={setEndStep}
+          onRestart={() => setPopup({ kind: 'new-game' })}
+          onExplore={() => setMode('explore')}
+        />
+      )}
 
       {mode === 'play' && phase === 'event' && card && (
         // Centered on the stage, whatever the card's height
@@ -205,6 +231,14 @@ export function Game({ game, setGame, onLearnMore, onRestart, onGameOver }: Game
             {popup.kind === 'manual' && <ManualPopup />}
             {popup.kind === 'new-game' && <NewGameConfirm onRestart={onRestart} onCancel={() => setPopup(null)} />}
             {popup.kind === 'city-bank' && <CityBankInfo />}
+            {popup.kind === 'feedback' && (
+              <div className="absolute top-1/2 left-1/2 -translate-1/2">
+                <div role="dialog" aria-label="Share feedback" className="w-[520px] animate-pop-in rounded-[7px] border border-black bg-cream px-[28px] pt-[24px] pb-[28px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] motion-reduce:animate-none">
+                  <h2 className="mb-[14px] font-mono text-[28px] leading-none text-ink italic">share feedback</h2>
+                  <FeedbackForm context={gameSummary(game)} />
+                </div>
+              </div>
+            )}
             {popup.kind === 'character' && (
               // Explore mode: Figma's spot, beside the player cards. Play mode:
               // beside the roster, centered top to bottom.

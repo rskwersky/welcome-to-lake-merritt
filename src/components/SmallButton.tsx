@@ -16,7 +16,7 @@ export function SmallButton({ width, className = '', style, children, ...rest }:
   return (
     <button
       type="button"
-      className={`h-[42px] shrink-0 cursor-pointer rounded-[7px] border-[1.25px] border-ink bg-cream px-[11.25px] font-mono text-[20px] whitespace-nowrap text-ink-soft drop-shadow-[0px_4px_2px_rgba(0,0,0,0.25)] transition-colors duration-150 hover:bg-peach focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ink relative disabled:cursor-default disabled:hover:bg-cream disabled:after:absolute disabled:after:inset-[-1.25px] disabled:after:rounded-[7px] disabled:after:bg-ink-soft/25 motion-reduce:transition-none ${className}`}
+      className={`h-[42px] shrink-0 cursor-pointer rounded-[7px] border-[1.25px] border-ink bg-cream px-[11.25px] font-mono text-[20px] whitespace-nowrap text-ink-soft drop-shadow-[0px_4px_2px_rgba(0,0,0,0.25)] transition-colors duration-150 hover:bg-peach focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-soft relative disabled:cursor-default disabled:hover:bg-cream disabled:after:absolute disabled:after:inset-[-1.25px] disabled:after:rounded-[7px] disabled:after:bg-ink-soft/25 motion-reduce:transition-none ${className}`}
       style={width ? { width, ...style } : style}
       {...rest}
     >

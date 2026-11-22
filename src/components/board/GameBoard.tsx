@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { getCharacter } from '../../data/characters'
 import type { MapStarId } from '../../data/explore'
-import { TOKEN_ORDER, TRACKER, pointsToStars, type CharacterId } from '../../data/gameRules'
+import { TOKEN_ORDER, TOTAL_ROUNDS, TRACKER, pointsToStars, type CharacterId } from '../../data/gameRules'
 import { BAR_HEIGHT, BAR_WIDTH, PADDING, ROW_GAP, ROW_HEIGHT, SLOT_WIDTH, STAR, TRACKER_BOX } from './trackerLayout'
 import { METRIC_ROWS, hasCityBank, remaining, startingTokens, type Metrics, type Player, type Spent } from '../../game/state'
 import { CharacterToken } from '../CharacterToken'
@@ -123,6 +123,22 @@ export function RoundCounter({ roundsUntilReset, raised }: { roundsUntilReset: n
     <div className={`absolute top-[40.07px] left-[1175.93px] h-[35.833px] w-[222.951px] rounded-[5px] border border-black bg-cream ${lift(raised)}`}>
       <p className="absolute top-[12.42px] left-[12.97px] font-mono text-[12px] leading-[0.94] whitespace-nowrap text-ink-soft">
         Rounds until token reset: {roundsUntilReset}
+      </p>
+    </div>
+  )
+}
+
+/**
+ * Which round of the game this is (top left, Figma "10 game ending + total
+ * round tracker"): "Round 7 of 15". Saying "of 15" tells players how far
+ * along they are and that an ending is coming.
+ */
+export function TotalRounds({ round, raised }: { round: number; raised?: boolean }) {
+  const done = round > TOTAL_ROUNDS
+  return (
+    <div className={`absolute top-[39.91px] left-[41.13px] flex h-[36px] items-center rounded-[5px] border border-black bg-cream px-[12px] ${lift(raised)}`}>
+      <p className="font-mono text-[12px] leading-[0.94] whitespace-nowrap text-ink-soft">
+        {done ? `All ${TOTAL_ROUNDS} rounds played` : `Round ${round} of ${TOTAL_ROUNDS}`}
       </p>
     </div>
   )

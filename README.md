@@ -7,8 +7,8 @@ is never finished, and compromise is inevitable.
 This repo is the web version of the game, built one Figma section at a time.
 Done so far: **1 · intro** (game overview, postcard landing, history),
 **2 · setup** (game manual, player count), **3 · character select**,
-**4 · tutorial** (round 1) and **5 · game board + explore mode** (rounds 2 to 15).
-The end screen isn't designed yet.
+**4 · tutorial** (round 1), **5 · game board + explore mode** (rounds 2 to 15)
+and the ending (final report, debrief, feedback).
 The full rules are in `docs/game-rules.md`. Designed in Figma, built with
 **React + TypeScript + Tailwind CSS**, bundled with **Vite**.
 
@@ -51,9 +51,26 @@ directly, with made-up players (only in development, never on the built site):
 | `localhost:5173/?screen=character-select&players=3` | character select for 3 players |
 | `localhost:5173/?screen=how-to-play` | the game manual |
 | `localhost:5173/?screen=game&players=4` | the game board at round 2 |
+| `localhost:5173/?screen=game&players=4&round=15` | the last round (earlier rounds played for you) |
+| `localhost:5173/?screen=game-over&players=4` | a finished game: the final report and debrief |
 
 Screen names: `game-overview`, `landing`, `history-short`, `how-to-play`,
-`player-count`, `character-select`, `tutorial`, `game`. See `src/devStart.ts`.
+`player-count`, `character-select`, `tutorial`, `game`, `game-over`. See `src/devStart.ts`.
+
+## Feedback form
+
+The last end card (and "feedback" in the menu) has a text box that emails
+players' feedback to you through [Formspree](https://formspree.io), because a
+website can't send email on its own. To connect it:
+
+1. Make a free Formspree account and create a form with your email address.
+2. Copy `.env.example` to `.env.local` and paste the form's endpoint
+   (`https://formspree.io/f/…`) after `VITE_FEEDBACK_URL=`.
+3. Restart `npm run dev`. When you publish the site, add the same
+   `VITE_FEEDBACK_URL` setting in your hosting service's environment settings.
+
+Until it's connected, the form shows "not connected yet" while developing and
+is hidden on the published site.
 
 ## The flow
 
@@ -62,7 +79,7 @@ Screen names: `game-overview`, `landing`, `history-short`, `how-to-play`,
   ──learn more──▶ 04 history / short ──continue──▶ 05 how to play (manual)
   ──continue──▶ 06 player count ──continue──▶ 07 character select (once per player)
   ──continue──▶ 08 tutorial / 1–8 ──start game──▶ 09 game board (rounds 2 to 15)
-  ⇄ 10 explore mode ──after round 15──▶ end screen (not designed yet)
+  ⇄ 10 explore mode ──after round 15──▶ 10 game ending: final report ▶ debrief ▶ thank you
 ```
 
 | Figma frame | Code |

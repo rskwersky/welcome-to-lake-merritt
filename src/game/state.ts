@@ -160,6 +160,8 @@ export const METRIC_ROWS: { metric: Metric; label: string }[] = [
 // The tutorial is round 1. Each round draws the next card from the deck.
 // After rounds 5 and 10 every holder's tokens reset (spent is cleared).
 
+/** What happened in one round: which card, and which option (0 to 2) the group chose. */
+export type RoundRecord = { eventId: string; option: number }
 
 export type GameState = {
   players: Player[]
@@ -169,6 +171,8 @@ export type GameState = {
   deck: string[]
   spent: Spent
   metrics: Metrics
+  /** Every finished round, in order. The debrief is built from it. */
+  history: RoundRecord[]
 }
 
 /** A random order (Fisher–Yates shuffle: swap each card with a random earlier one). */
@@ -181,14 +185,21 @@ export function shuffle<T>(items: T[]): T[] {
   return out
 }
 
-/** After the tutorial: round 2, the other 14 cards shuffled, tutorial spending kept. */
-export function gameAfterTutorial(players: Player[], spent: Spent, metrics: Metrics): GameState {
-  return { players, round: 2, deck: shuffle(EVENTS.map((e) => e.id).filter((id) => id !== TUTORIAL_EVENT_ID)), spent, metrics }
+/** After the tutorial: round 2, the other 14 cards shuffled, tutorial spending and choice kept. */
+export function gameAfterTutorial(players: Player[], spent: Spent, metrics: Metrics, tutorialOption: number): GameState {
+  return {
+    players,
+    round: 2,
+    deck: shuffle(EVENTS.map((e) => e.id).filter((id) => id !== TUTORIAL_EVENT_ID)),
+    spent,
+    metrics,
+    history: [{ eventId: TUTORIAL_EVENT_ID, option: tutorialOption }],
+  }
 }
 
 /** "restart game": round 1, full tokens, all 15 cards shuffled, metrics at 0. */
 export function freshGame(players: Player[]): GameState {
-  return { players, round: 1, deck: shuffle(EVENTS.map((e) => e.id)), spent: {}, metrics: startingMetrics() }
+  return { players, round: 1, deck: shuffle(EVENTS.map((e) => e.id)), spent: {}, metrics: startingMetrics(), history: [] }
 }
 
 export function topCard(game: GameState) {
@@ -199,14 +210,57 @@ export function isGameOver(game: GameState): boolean {
   return game.round > TOTAL_ROUNDS || game.deck.length === 0
 }
 
-/** Finish a round: spend the tokens, change the metrics, discard the card, maybe reset tokens. */
-export function finishRound(game: GameState, allocation: Allocation, effect: Effect): GameState {
+/**
+ * Finish a round with the chosen option (0 to 2): spend the tokens, change
+ * the metrics, write it in the history, discard the card, maybe reset tokens.
+ */
+export function finishRound(game: GameState, allocation: Allocation, option: number): GameState {
+  const card = topCard(game)
+  if (!card) return game
   const reset = isResetAfter(game.round)
   return {
     ...game,
     round: game.round + 1,
     deck: game.deck.slice(1),
     spent: reset ? {} : spend(game.spent, allocation),
-    metrics: applyEffect(game.metrics, effect),
+    metrics: applyEffect(game.metrics, card.options[option].effect),
+    history: [...game.history, { eventId: card.id, option }],
   }
+}
+
+/**
+ * A made-up game for testing (dev shortcuts only): plays rounds 1 to
+ * `untilRound − 1` with random choices the group could afford, so the
+ * ending and debrief have real-looking history to show.
+ */
+export function simulatedGame(players: Player[], untilRound: number): GameState {
+  let game = freshGame(players)
+  while (game.round < untilRound && !isGameOver(game)) {
+    const card = topCard(game)!
+    // Prefer funded fixes, sometimes compromise, rarely do nothing; skip what's unaffordable.
+    const roll = Math.random()
+    const wanted = roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2
+    const option = [wanted, 1, 2].find((i) => canAfford(card.options[i].cost, players, game.spent)) ?? 2
+    // Pay from the whole group's tokens, players first, then the city bank.
+    const allocation = payFor(card.options[option].cost, players, game.spent)
+    game = finishRound(game, allocation, option)
+  }
+  return game
+}
+
+/** Covers a cost from whoever still has tokens (used by simulatedGame). */
+function payFor(cost: Cost, players: Player[], spent: Spent): Allocation {
+  const holders: Holder[] = [...players.map((p) => p.character), ...(hasCityBank(players) ? (['city'] as const) : [])]
+  const allocation: Allocation = {}
+  for (const t of TOKEN_ORDER) {
+    let need = costOf(cost, t)
+    for (const h of holders) {
+      const give = Math.min(need, remaining(h, players, spent)[t])
+      if (give > 0) {
+        allocation[h] = { ...(allocation[h] ?? noTokens()), [t]: give }
+        need -= give
+      }
+    }
+  }
+  return allocation
 }

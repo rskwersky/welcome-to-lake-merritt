@@ -12,6 +12,8 @@
   /* Rating stars: gold when a metric goes up, pink when it goes down */
   --color-star-up: #fbd57d;
   --color-star-down: #f5b29f;
+  /* The thank-you sticky note */
+  --color-note: #f6e8c6;
 
   /* Token boxes in the allocate-tokens popup */
   --color-error: #f6b29f; /* more tokens than they have */

@@ -13,13 +13,16 @@ type GameMenuProps = {
   onNewGame: () => void
   onLearnMore: () => void
   onToggleMode: () => void
+  /** "feedback": shown only when the feedback form is available */
+  onFeedback?: () => void
 }
 
 const A = '/assets/overview'
 
 // Each button's resting tilt once fanned out, top to bottom. They spread
 // from the booklet's corner, so the one farthest away tilts the most.
-const FAN = [-6, -3.5, -1]
+// (Top to bottom; with 3 buttons the top one is skipped.)
+const FAN = [-8, -6, -3.5, -1]
 // The booklet is drawn twice Figma's size (Figma's 69 × 87 was too small to
 // read as a menu): scaled 2× from its bottom-left corner, which moves from
 // Figma's (41, 975) to (24, 1000).
@@ -29,7 +32,8 @@ const BOOKLET = { scale: 2, from: { x: 41.13, y: 975.3 }, to: { x: 24, y: 1000 }
 const STEP = 46 + 12
 const GAP_ABOVE_BOOKLET = 28
 // How far each button travels: from the middle of the booklet to its spot.
-const TRAVEL = [0, 1, 2].map((i) => (2 - i) * STEP + 46 / 2 + GAP_ABOVE_BOOKLET + BOOKLET.height / 2)
+// `fromBottom`: 0 for the button just above the booklet, 1 for the next…
+const travel = (fromBottom: number) => fromBottom * STEP + 46 / 2 + GAP_ABOVE_BOOKLET + BOOKLET.height / 2
 
 const BUTTON =
   'h-[46px] w-[190px] origin-bottom-left cursor-pointer rounded-[9px] border-[1.5px] border-ink bg-cream font-mono text-[20px] text-ink-soft drop-shadow-[0px_3px_2px_rgba(0,0,0,0.2)] hover:bg-peach focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink'
@@ -42,7 +46,7 @@ const OPEN = '[transform:rotate(var(--tilt))] opacity-100 pointer-events-auto'
 const OPEN_ON_HOVER =
   'group-hover/menu:[transform:rotate(var(--tilt))] group-hover/menu:opacity-100 group-hover/menu:pointer-events-auto group-focus-within/menu:[transform:rotate(var(--tilt))] group-focus-within/menu:opacity-100 group-focus-within/menu:pointer-events-auto'
 
-export function GameMenu({ mode, onNewGame, onLearnMore, onToggleMode }: GameMenuProps) {
+export function GameMenu({ mode, onNewGame, onLearnMore, onToggleMode, onFeedback }: GameMenuProps) {
   // Opened by tapping (touch screens have no hover); hover and focus open it too.
   const [open, setOpen] = useState(false)
   const items = [
@@ -50,6 +54,7 @@ export function GameMenu({ mode, onNewGame, onLearnMore, onToggleMode }: GameMen
     { label: 'learn more', onClick: onLearnMore },
     { label: mode === 'play' ? 'explore mode' : 'play mode', onClick: onToggleMode },
   ]
+  if (onFeedback) items.splice(2, 0, { label: 'feedback', onClick: onFeedback })
 
   return (
     <>
@@ -87,7 +92,7 @@ export function GameMenu({ mode, onNewGame, onLearnMore, onToggleMode }: GameMen
       {/* One hover area covering the buttons and the booklet */}
       <div
         className="group/menu absolute flex w-[200px] flex-col justify-end"
-        style={{ left: BOOKLET.to.x - 3, top: 630, height: BOOKLET.to.y - 630 }}
+        style={{ left: BOOKLET.to.x - 3, top: 570, height: BOOKLET.to.y - 570 }}
         onMouseLeave={() => setOpen(false)}
       >
         <div className="flex flex-col gap-[12px] pl-[3px]" role="menu" aria-label="Game menu">
@@ -106,7 +111,7 @@ export function GameMenu({ mode, onNewGame, onLearnMore, onToggleMode }: GameMen
               // An "overshoot" curve, so each one springs a little past its
               // spot and settles. The nearest button goes first.
               className={`${BUTTON} transition-[transform,opacity,background-color] duration-[420ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none ${open ? OPEN : `${CLOSED} ${OPEN_ON_HOVER}`}`}
-              style={{ '--travel': `${TRAVEL[i]}px`, '--tilt': `${FAN[i]}deg`, transitionDelay: `${(2 - i) * 60}ms` } as CSSProperties}
+              style={{ '--travel': `${travel(items.length - 1 - i)}px`, '--tilt': `${FAN[FAN.length - items.length + i]}deg`, transitionDelay: `${(items.length - 1 - i) * 60}ms` } as CSSProperties}
             >
               {item.label}
             </button>

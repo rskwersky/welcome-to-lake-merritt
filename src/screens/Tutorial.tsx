@@ -26,7 +26,8 @@ import { applyEffect, hasCityBank, spend, startingMetrics, type Metrics, type Pl
 
 const EVENT = EVENTS.find((e) => e.id === TUTORIAL_EVENT_ID)!
 
-export type TutorialResult = { spent: Spent; metrics: Metrics }
+/** What round 1 leaves behind: tokens spent, the metrics, and which option (0 to 2) was chosen */
+export type TutorialResult = { spent: Spent; metrics: Metrics; option: number }
 
 type TutorialProps = {
   players: Player[]
@@ -133,7 +134,7 @@ export function Tutorial({ players, onStart }: TutorialProps) {
             Token amounts reset every five rounds. Ready to begin?
           </Tip>
           <div className="absolute z-30" style={{ left: 932.19, top: 127.39 }}>
-            <SmallButton width={152} onClick={() => onStart({ spent, metrics })}>
+            <SmallButton width={152} onClick={() => onStart({ spent, metrics, option: selected ?? 2 })}>
               start game
             </SmallButton>
           </div>
