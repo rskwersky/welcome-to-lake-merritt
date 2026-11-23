@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
-import { getCharacter } from '../../data/characters'
+import { characters, getCharacter } from '../../data/characters'
+import { MAP_STARS, type MapStarId } from '../../data/explore'
 import { TOKEN_ORDER, TOTAL_ROUNDS, type CharacterId, type Tokens, type TokenType } from '../../data/gameRules'
 import { hasCityBank, remaining, startingTokens, type Metrics, type Player, type Spent } from '../../game/state'
 import { Board, EventDeck, ScoreTrackerCard } from '../board/GameBoard'
+import { MiniCharacterCard } from '../CardFrame'
 import { CharacterToken } from '../CharacterToken'
 import { TokenIcon } from '../TokenIcon'
 
@@ -17,25 +19,43 @@ import { TokenIcon } from '../TokenIcon'
 const LIFT =
   'cursor-pointer transition-[translate,box-shadow] duration-200 hover:-translate-y-1 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0'
 
+const BOX = 'flex h-[27px] w-[128px] items-center justify-center rounded-[5px] border border-ink-soft bg-cream font-mono text-[12px] leading-none whitespace-nowrap text-ink-soft'
+
 /** A cream counter box: "Round 7 of 15", "Token reset in 3". */
 function Counter({ children }: { children: string }) {
+  return <p className={BOX}>{children}</p>
+}
+
+/** The round counters (play mode). Once the game is over, resets mean nothing, so that one goes. */
+export function Counters({ round, untilReset }: { round: number; untilReset?: number }) {
   return (
-    <p className="flex h-[27px] w-[128px] items-center justify-center rounded-[5px] border border-ink-soft bg-cream font-mono text-[12px] leading-none whitespace-nowrap text-ink-soft">
-      {children}
-    </p>
+    <>
+      <Counter>{round > TOTAL_ROUNDS ? `All ${TOTAL_ROUNDS} played` : `Round ${round} of ${TOTAL_ROUNDS}`}</Counter>
+      {untilReset !== undefined && <Counter>{`Token reset in ${untilReset}`}</Counter>}
+    </>
   )
 }
 
-/**
- * The top bar: the menu booklet, then the round counter and the token reset
- * counter. (Once the game is over, resets mean nothing, so that one goes.)
- */
-export function TopBar({ menu, round, untilReset }: { menu: ReactNode; round: number; untilReset?: number }) {
+/** A top bar button in the counters' shape (explore mode: "play mode", "learn more"). */
+export function TopButton({ children, onClick }: { children: string; onClick: () => void }) {
+  return (
+    // The visible box is 27px tall; the tap area reaches 44px
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${BOX} relative cursor-pointer transition-[translate,background-color] duration-200 before:absolute before:-inset-y-[9px] before:inset-x-0 hover:-translate-y-0.5 hover:bg-peach focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
+    >
+      {children}
+    </button>
+  )
+}
+
+/** The top bar: the menu booklet, then the counters or buttons (`children`). */
+export function TopBar({ menu, children }: { menu: ReactNode; children: ReactNode }) {
   return (
     <div className="flex items-center gap-[15px] px-[28px] pt-[43px]">
       {menu}
-      <Counter>{round > TOTAL_ROUNDS ? `All ${TOTAL_ROUNDS} played` : `Round ${round} of ${TOTAL_ROUNDS}`}</Counter>
-      {untilReset !== undefined && <Counter>{`Token reset in ${untilReset}`}</Counter>}
+      {children}
     </div>
   )
 }
@@ -51,15 +71,89 @@ export function PhoneTracker({ metrics }: { metrics: Metrics }) {
 // always is on the map.
 const MAP = { size: 321.7, stageBox: { left: 167.89, top: 30.15, size: 911.497 } }
 
-/** The map and the event deck. With `onDraw`, tapping the deck draws a card. */
-export function PhoneMap({ onDraw, glowDeck, raisedDeck }: { onDraw?: () => void; glowDeck?: boolean; raisedDeck?: boolean }) {
+/** Phone map stars are drawn this big (Figma M5), twice the size the shrunk map would give them */
+const STAR_SIZE = 23
+/** ...but each one can be tapped anywhere in a 44px circle around it (Apple's minimum tap size) */
+const STAR_TAP = 44
+
+type PhoneMapProps = {
+  /** Tap the deck to draw a card */
+  onDraw?: () => void
+  glowDeck?: boolean
+  raisedDeck?: boolean
+  /** Explore mode: the map stars appear, and tapping one opens its photo */
+  onStar?: (id: MapStarId) => void
+  /**
+   * Tutorial: dim the board but keep the deck bright. The map is raised
+   * above the screen's dim layer, and gets its own dim square over the
+   * board, under the deck.
+   */
+  dimBoard?: boolean
+}
+
+/** The map and the event deck; in explore mode, the map stars too. */
+export function PhoneMap({ onDraw, glowDeck, raisedDeck, onStar, dimBoard }: PhoneMapProps) {
   const scale = MAP.size / MAP.stageBox.size
   return (
-    <div className="relative shrink-0" style={{ width: MAP.size, height: MAP.size }}>
+    <div className={`relative shrink-0 ${dimBoard ? 'z-20' : ''}`} style={{ width: MAP.size, height: MAP.size }}>
       <div className="absolute top-0 left-0 origin-top-left" style={{ transform: `scale(${scale}) translate(${-MAP.stageBox.left}px, ${-MAP.stageBox.top}px)` }}>
         <Board />
+        {dimBoard && (
+          // The board's own square (820.63px, tilted -6.76°), in the dim navy
+          <div className="absolute z-10 flex items-center justify-center" style={{ left: MAP.stageBox.left, top: MAP.stageBox.top, width: MAP.stageBox.size, height: MAP.stageBox.size }}>
+            <div className="size-[820.63px] flex-none bg-ink-soft/50" style={{ rotate: '-6.76deg' }} />
+          </div>
+        )}
         <EventDeck onDraw={onDraw} glow={glowDeck} raised={raisedDeck} />
       </div>
+      {/* The stars sit outside the shrunk layer, so they can be bigger than
+          it would make them. Each is placed by its center on the desktop
+          map (MAP_STARS), moved and shrunk the same way as the map. */}
+      {onStar &&
+        MAP_STARS.map((star) => {
+          const x = (star.left + 23 - MAP.stageBox.left) * scale
+          const y = (star.top + 23 - MAP.stageBox.top) * scale
+          return (
+            <button
+              key={star.id}
+              type="button"
+              onClick={() => onStar(star.id)}
+              aria-label={`Photo of ${star.name}`}
+              className="group/star absolute z-10 flex animate-pop-in cursor-pointer items-center justify-center rounded-full focus-visible:outline-3 focus-visible:outline-ink motion-reduce:animate-none"
+              style={{ left: x - STAR_TAP / 2, top: y - STAR_TAP / 2, width: STAR_TAP, height: STAR_TAP }}
+            >
+              <img
+                alt=""
+                src={`/assets/board/star-${star.kind}.svg`}
+                draggable={false}
+                className="block max-w-none transition-[translate,filter] duration-200 group-hover/star:-translate-y-1 group-hover/star:drop-shadow-[-1px_4px_3px_rgba(0,0,0,0.25)] motion-reduce:transition-none motion-reduce:group-hover/star:translate-y-0"
+                style={{ width: STAR_SIZE, height: STAR_SIZE }}
+              />
+            </button>
+          )
+        })}
+    </div>
+  )
+}
+
+/**
+ * All six characters' small cards, 3 across (Figma M5): every character,
+ * played or not, so players can read about each one. Tap one for its card.
+ */
+export function PhoneCharacterCards({ onOpen }: { onOpen: (id: CharacterId) => void }) {
+  return (
+    <div className="grid grid-cols-[repeat(3,107.61px)] gap-x-[17.5px] gap-y-[17px]">
+      {characters.map(({ id, name }) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onOpen(id)}
+          aria-label={`Open ${name}’s card`}
+          className="relative h-[138.49px] w-[107.61px] cursor-pointer rounded-[6px] shadow-[-3px_3px_2px_0px_rgba(0,0,0,0.25)] transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-[-3px_8px_7px_0px_rgba(0,0,0,0.22)] focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+        >
+          <MiniCharacterCard id={id} />
+        </button>
+      ))}
     </div>
   )
 }

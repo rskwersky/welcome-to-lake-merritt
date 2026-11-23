@@ -165,10 +165,12 @@ scripts/
 - **Script font:** *Boucherie Cursive* is an Adobe Font, loaded from the Adobe web
   project in `index.html`. Adobe only serves it to domains listed in that web project,
   so add the deploy domain there. *Dancing Script* shows if it can't load.
-- **Phones:** the game board has a phone layout (Figma "6b · mobile hi-fi", M1 to M4).
-  Still to build for phones: explore mode (M5), character select (M6), the game
-  overview (M7) and the tutorial (M8); until then those screens shrink to fit. The end
-  cards on a phone are the desktop ones, shrunk. The history page is fully responsive.
+- **Phones:** the game overview, character select, tutorial, game board and explore
+  mode have phone layouts (Figma "6b · mobile hi-fi", M1 to M8). Still shrunk to fit on
+  phones: the landing postcard, how to play and player
+  count, which have no phone designs yet. On phones, explore mode has no big manual
+  ("learn more" opens the history page), and the end cards are the desktop ones,
+  shrunk. The history page is fully responsive.
 
 ## Deploy
 

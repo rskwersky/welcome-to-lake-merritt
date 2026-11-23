@@ -3,7 +3,9 @@ import { Button } from '../components/Button'
 import { MiniCharacterCard } from '../components/CardFrame'
 import { ManualArt } from '../components/board/ManualArt'
 import { MiniPostcard } from '../components/MiniPostcard'
+import { PhoneStage } from '../components/phone/PhoneStage'
 import { Stage } from '../components/Stage'
+import { usePhoneLayout } from '../hooks/usePhoneLayout'
 import type { CharacterId } from '../data/gameRules'
 
 // Figma screen "01 game overview": the first thing you see. A tabletop with
@@ -218,6 +220,8 @@ type GameOverviewProps = {
 }
 
 export function GameOverview({ onPlay }: GameOverviewProps) {
+  const phone = usePhoneLayout()
+  if (phone) return <GameOverviewPhone onPlay={onPlay} />
   return (
     <Stage className="bg-overview">
       {/* Objects are listed bottom to top, in Figma's layer order. */}
@@ -265,5 +269,73 @@ export function GameOverview({ onPlay }: GameOverviewProps) {
         <Button onClick={onPlay}>play game</Button>
       </div>
     </Stage>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// The phone version (Figma "6b · mobile hi-fi", M7)
+//
+// The same table, rearranged into a portrait collage: the board in the
+// middle, three character cards above it and three below, the manual top
+// right, the tokens bottom right, then "play game". The pieces are the
+// desktop ones: the board, game card and manual are drawn on a stage-sized
+// layer and shrunk; the cards are the same small cards at 60%.
+// Touch screens have no hover, so nothing lifts here.
+
+/** Figma M7: the board's 370px box sits at (10, 211.6); desktop's is 816.4px at (311.81, 62.87). */
+const PHONE_BOARD = { left: 10, top: 211.6, scale: 370 / 816.385 }
+
+/** A small character card at 60%, centered on `center` (phone px), tilted by `rotate`. */
+function PhoneTableCard({ id, center, rotate }: { id: CharacterId; center: { x: number; y: number }; rotate: number }) {
+  const scale = 0.6
+  const w = 107.61
+  const h = 138.49
+  return (
+    <div className="absolute" style={{ left: center.x - w / 2, top: center.y - h / 2, width: w, height: h, rotate: `${rotate}deg`, scale }}>
+      <div className={`relative size-full rounded-[6px] ${cardShadow}`}>
+        <MiniCharacterCard id={id} />
+      </div>
+    </div>
+  )
+}
+
+function GameOverviewPhone({ onPlay }: GameOverviewProps) {
+  return (
+    <PhoneStage>
+      {/* Scrolls on screens shorter than Figma's 844px */}
+      <div className="absolute inset-0 overflow-x-hidden overflow-y-auto">
+        <div className="relative h-[844px] w-full" role="img" aria-label="The game laid out on a table: the board, the six character cards, the manual and tokens">
+          {/* The board and the game card on it: a stage-sized layer, shrunk
+              and moved so the board's box lands at Figma's spot */}
+          <div
+            className="pointer-events-none absolute top-0 left-0 h-[1024px] w-[1440px] origin-top-left"
+            style={{ transform: `translate(${PHONE_BOARD.left}px, ${PHONE_BOARD.top}px) scale(${PHONE_BOARD.scale}) translate(-311.81px, -62.87px)` }}
+          >
+            <Board />
+            <GameCard />
+          </div>
+          {/* The manual, top right (71% of its overview size) */}
+          <div className="pointer-events-none absolute top-0 left-0 h-[1024px] w-[1440px]">
+            <ManualArt at={{ left: 245.5, top: 109.3 }} scale={0.71} />
+          </div>
+          <LooseToken kind="social" box={{ left: 323.5, top: 508.5, width: 29.3, height: 28.7 }} />
+          <LooseToken kind="political" box={{ left: 296.2, top: 543.7, width: 29.3, height: 28.9 }} />
+          <LooseToken kind="economic" box={{ left: 334.8, top: 552, width: 32.2, height: 29.6 }} />
+          {/* Three cards above the board, three below */}
+          <PhoneTableCard id="recreationist" center={{ x: 52, y: 239.2 }} rotate={-0.36} />
+          <PhoneTableCard id="environmentalist" center={{ x: 124.7, y: 222.7 }} rotate={-4.82} />
+          <PhoneTableCard id="educator" center={{ x: 199.3, y: 202.6 }} rotate={-3.2} />
+          <PhoneTableCard id="protector" center={{ x: 59.1, y: 577.4 }} rotate={7.61} />
+          <PhoneTableCard id="organizer" center={{ x: 137.2, y: 586 }} rotate={2} />
+          <PhoneTableCard id="citizen" center={{ x: 210.5, y: 593.7 }} rotate={0} />
+        </div>
+        {/* Figma: 211.5 × 54.9 at y 750, the large button at 90% */}
+        <div className="absolute inset-x-0 top-[750px] flex justify-center">
+          <div style={{ zoom: 211.5 / 235 }}>
+            <Button onClick={onPlay}>play game</Button>
+          </div>
+        </div>
+      </div>
+    </PhoneStage>
   )
 }

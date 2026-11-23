@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Cost, GameEvent } from '../../data/events'
 import { TOKEN_ORDER } from '../../data/gameRules'
 import type { Player } from '../../game/state'
@@ -13,6 +14,8 @@ import { Sheet } from './Sheet'
 // Tap an option: it turns gold; continue unlocks.
 
 type EventSheetProps = {
+  /** A tutorial tip at the top of the sheet */
+  note?: ReactNode
   event: GameEvent
   selected: number | null
   onSelect: (option: number) => void
@@ -38,9 +41,10 @@ function CostTokens({ cost }: { cost: Cost }) {
   )
 }
 
-export function EventSheet({ event, selected, onSelect, onContinue, canAfford, players }: EventSheetProps) {
+export function EventSheet({ event, selected, onSelect, onContinue, canAfford, players, note }: EventSheetProps) {
   return (
     <Sheet
+      note={note}
       labelledBy="event-title"
       footer={
         <SmallButton width={121} disabled={selected === null} onClick={onContinue}>

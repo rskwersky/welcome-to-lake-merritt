@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Cost } from '../../data/events'
 import { TOKEN_ORDER, type TokenType } from '../../data/gameRules'
 import { checkAllocation, costOf, hasCityBank, noTokens, remaining, type Allocation, type Holder, type InputState, type Player, type Spent } from '../../game/state'
@@ -22,6 +22,8 @@ import { Sheet } from './Sheet'
 //     nobody can give too much by accident.
 
 type AllocateSheetProps = {
+  /** A tutorial tip at the top of the sheet */
+  note?: ReactNode
   cost: Cost
   players: Player[]
   spent: Spent
@@ -54,7 +56,7 @@ function StepButton({ sign, label, disabled, onClick }: { sign: '−' | '+'; lab
   )
 }
 
-export function AllocateSheet({ cost, players, spent, onContinue }: AllocateSheetProps) {
+export function AllocateSheet({ cost, players, spent, onContinue, note }: AllocateSheetProps) {
   const [allocation, setAllocation] = useState<Allocation>({})
   const check = checkAllocation(cost, allocation, players, spent)
   const given = (h: Holder, t: TokenType) => allocation[h]?.[t] ?? 0
@@ -103,6 +105,7 @@ export function AllocateSheet({ cost, players, spent, onContinue }: AllocateShee
 
   return (
     <Sheet
+      note={note}
       label="Allocate tokens"
       footer={
         <SmallButton width={121} disabled={!check.ready} onClick={() => onContinue(allocation)}>

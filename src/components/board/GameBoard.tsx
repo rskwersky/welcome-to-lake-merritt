@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { getCharacter } from '../../data/characters'
-import type { MapStarId } from '../../data/explore'
+import { MAP_STARS, type MapStarId } from '../../data/explore'
 import { TOKEN_ORDER, TOTAL_ROUNDS, TRACKER, pointsToStars, type CharacterId, type Metric } from '../../data/gameRules'
 import { BAR_HEIGHT, BAR_WIDTH, PADDING, ROW_GAP, ROW_HEIGHT, SLOT_WIDTH, STAR, TRACKER_BOX } from './trackerLayout'
 import { METRIC_ROWS, hasCityBank, remaining, startingTokens, type Metrics, type Player, type Spent } from '../../game/state'
@@ -35,15 +35,6 @@ function Tilted({ box, rotate, children, className = '' }: { box: Box; rotate: n
 
 // ---------------------------------------------------------------------------
 // The board, map and map stars
-
-const MAP_STARS: { id: MapStarId; name: string; left: number; top: number; kind: 'a' | 'b' }[] = [
-  { id: 'pergola', name: 'the pergola', left: 932.19, top: 191.01, kind: 'a' },
-  { id: 'bird-sanctuary', name: 'the bird sanctuary', left: 569.19, top: 336.01, kind: 'b' },
-  { id: 'lake-shore-ave', name: 'Lakeshore Ave', left: 788.19, top: 413.01, kind: 'b' },
-  { id: 'boating-center', name: 'the boating center', left: 556.19, top: 413.01, kind: 'a' },
-  { id: 'lake', name: 'the lake', left: 672.19, top: 467.01, kind: 'b' },
-  { id: 'corner', name: 'the northwest shore', left: 264.19, top: 223.01, kind: 'b' },
-]
 
 /**
  * The board and map. The stars only appear in explore mode (`onStar`): in

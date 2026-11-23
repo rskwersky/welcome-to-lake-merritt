@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
+import { DimOverlay } from '../components/board/GameBoard'
+import { PlayerBadge } from '../components/PlayerBadge'
 import { CharacterCard } from '../components/CharacterCard'
 import { SmallButton } from '../components/SmallButton'
+import { PhoneStage } from '../components/phone/PhoneStage'
 import { Stage } from '../components/Stage'
-import { characters } from '../data/characters'
+import { usePhoneLayout } from '../hooks/usePhoneLayout'
+import { characters, getCharacter } from '../data/characters'
 import type { CharacterId } from '../data/gameRules'
 
 // Figma screens "07 character select / …".
@@ -42,6 +46,7 @@ export function CharacterSelect({ playerCount, initialPicks, onContinue }: Chara
   // character. -1 = everyone has one and nobody is re-choosing.
   const chooser = rechooser ?? picks.indexOf(null)
   const allPicked = chooser === -1
+  const phone = usePhoneLayout()
 
   const pick = (id: CharacterId) => {
     if (rechooser === null) {
@@ -66,6 +71,19 @@ export function CharacterSelect({ playerCount, initialPicks, onContinue }: Chara
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [rechooser])
+
+  if (phone) {
+    return (
+      <CharacterSelectPhone
+        picks={picks}
+        chooser={chooser}
+        rechooser={rechooser}
+        onPick={pick}
+        onRechoose={setRechooser}
+        onContinue={() => onContinue(picks as CharacterId[])}
+      />
+    )
+  }
 
   return (
     <Stage className="bg-cream">
@@ -103,5 +121,129 @@ export function CharacterSelect({ playerCount, initialPicks, onContinue }: Chara
         </div>
       )}
     </Stage>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// The phone version (Figma "6b · mobile hi-fi", M6)
+//
+// Phones have no hover, so cards don't flip by themselves. Instead:
+//   tap a card → its description opens in the middle, over the dimmed grid,
+//                with "select" underneath (or who has it, if it's taken);
+//   select     → it's yours, and the next player chooses.
+// Cards are 2 across. Taken cards are darkened, with the player's badge;
+// once everyone has picked, tap a badge to let that player choose again.
+// continue stays greyed out until everyone has a character.
+
+// Figma M6: cards 164 × 211 (58% of 284 × 365), the open card 244 × 314 (86%)
+const SMALL = 164 / 284
+const OPEN = 244 / 284
+
+type CharacterSelectPhoneProps = {
+  picks: (CharacterId | null)[]
+  /** The player choosing (0-based), or -1 once everyone has a character */
+  chooser: number
+  rechooser: number | null
+  onPick: (id: CharacterId) => void
+  onRechoose: (player: number) => void
+  onContinue: () => void
+}
+
+function CharacterSelectPhone({ picks, chooser, rechooser, onPick, onRechoose, onContinue }: CharacterSelectPhoneProps) {
+  // The card opened to read (tap a card), or null
+  const [open, setOpen] = useState<CharacterId | null>(null)
+  const allPicked = chooser === -1
+
+  // Esc closes the open card
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(null)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  const openOwner = open ? picks.indexOf(open) : -1
+  // Can the chooser take the open card? Free cards, or any card while someone re-chooses.
+  const canSelect = !allPicked && (openOwner === -1 || rechooser !== null)
+
+  return (
+    <PhoneStage>
+      <div className="absolute inset-0 overflow-x-hidden overflow-y-auto">
+        <div className="flex min-h-full flex-col items-center px-[24px] pt-[58px] pb-[38px]">
+          <p aria-live="polite" className="min-h-[18px] w-full font-mono text-[15px] leading-none text-black italic">
+            {allPicked ? 'Everyone has a character.' : `Player ${chooser + 1}, choose your character:`}
+          </p>
+
+          <div className="mt-[16px] grid grid-cols-[repeat(2,164px)] gap-x-[14px] gap-y-[11px]">
+            {characters.map(({ id, name }) => {
+              const owner = picks.indexOf(id)
+              const taken = owner !== -1 && rechooser === null
+              return (
+                <div key={id} className="relative h-[211px] w-[164px]">
+                  {/* The card picture, shrunk (not itself clickable here) */}
+                  <div className="pointer-events-none absolute top-0 left-0 origin-top-left" style={{ scale: SMALL }} aria-hidden="true">
+                    <CharacterCard id={id} taken={taken} />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(id)}
+                    aria-label={`${name}${owner !== -1 ? `, Player ${owner + 1}’s` : ''}: read their card`}
+                    className="absolute inset-0 cursor-pointer rounded-[10px] transition-[translate] duration-200 hover:-translate-y-1 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                  />
+                  {owner !== -1 && (
+                    <PlayerBadge
+                      key={owner}
+                      player={owner + 1}
+                      size="small"
+                      onClick={allPicked ? () => onRechoose(owner) : undefined}
+                      className="absolute right-[8px] bottom-[10px] animate-badge-in motion-reduce:animate-none"
+                    />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="min-h-[20px] flex-1" />
+          <SmallButton width={121} disabled={!allPicked} onClick={onContinue}>
+            continue
+          </SmallButton>
+        </div>
+      </div>
+
+      {/* The open card, over the dimmed grid. Tap outside (or Esc) to close. */}
+      {open && (
+        <>
+          <DimOverlay />
+          <button type="button" aria-label="Close" onClick={() => setOpen(null)} className="absolute inset-0 z-20 cursor-default" />
+          <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-[18px]">
+            <div className="animate-pop-in motion-reduce:animate-none" style={{ width: 284 * OPEN, height: 365 * OPEN }}>
+              <div className="origin-top-left" style={{ scale: OPEN }}>
+                <CharacterCard id={open} side="description" />
+              </div>
+            </div>
+            <div className="pointer-events-auto">
+              {canSelect ? (
+                <SmallButton
+                  width={121}
+                  // In the character's own color (an inline style wins over the button's cream)
+                  style={{ backgroundColor: `var(--color-${open})` }}
+                  onClick={() => {
+                    onPick(open)
+                    setOpen(null)
+                  }}
+                >
+                  select
+                </SmallButton>
+              ) : (
+                <p className="rounded-[7px] border border-ink-soft bg-cream px-[12px] py-[8px] font-mono text-[15px] text-ink-soft italic">
+                  {openOwner !== -1 ? `Player ${openOwner + 1} has ${getCharacter(open).name}` : 'Everyone has a character'}
+                </p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </PhoneStage>
   )
 }
