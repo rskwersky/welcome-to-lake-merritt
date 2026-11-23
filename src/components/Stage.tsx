@@ -39,7 +39,9 @@ export function Stage({ children, className = '', onBackgroundClick }: StageProp
       {/* The outer box takes up the scaled size so centering works;
           the inner box is the real 1440×1024 frame, scaled with CSS transform. */}
       <div style={{ width: STAGE_WIDTH * scale, height: STAGE_HEIGHT * scale }}>
+        {/* data-stage: lets code find the frame to convert screen px to stage px */}
         <div
+          data-stage
           className="relative origin-top-left"
           style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `scale(${scale})` }}
         >

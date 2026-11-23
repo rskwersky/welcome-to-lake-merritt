@@ -9,6 +9,18 @@
   --color-cream: #f9f5ea;
   --color-ink: #0f1028;
   --color-ink-soft: #0f132c;
+  /* Rating stars: gold when a metric goes up, pink when it goes down */
+  --color-star-up: #fbd57d;
+  --color-star-down: #f5b29f;
+  /* The thank-you sticky note */
+  --color-note: #f6e8c6;
+
+  /* Token boxes in the allocate-tokens popup */
+  --color-error: #f6b29f; /* more tokens than they have */
+  --color-done: #a0cbad; /* all of this type used */
+
+  /* Warm light on the game overview table */
+  --color-peach: #fbdda5;
 
   /* Sky gradient stops (landing + history screens) */
   --color-sky-blue: #8fb1be;
@@ -24,22 +36,111 @@
   --color-organizer: #f3bfd6;
   --color-educator: #a9b0ff;
 
-  --font-mono: "Courier Prime", ui-monospace, monospace;
-  --font-script: "Boucherie Cursive", "Dancing Script", cursive;
+  /* Character cards (drawn in src/components/CardFrame.tsx): the inside
+     color, the outer frame, and the title bar / stats bar. Sampled from the
+     Figma card art. */
+  --color-card-organizer: #f1bbd3;
+  --color-card-recreationist: #f5b19e;
+  --color-card-protector: #f5e6c5;
+  --color-card-environmentalist: #d4e1d5;
+  --color-card-citizen: #c3dee7;
+  --color-card-educator: #f3f0e1;
+  --color-card-organizer-frame: #df6596;
+  --color-card-recreationist-frame: #cc370c;
+  --color-card-protector-frame: #f7c15f;
+  --color-card-environmentalist-frame: #9cc4a9;
+  --color-card-citizen-frame: #8baec1;
+  --color-card-educator-frame: #141649;
+  --color-card-organizer-title: #7c3f60;
+  --color-card-recreationist-title: #771b02;
+  --color-card-protector-title: #8a560b;
+  --color-card-environmentalist-title: #384237;
+  --color-card-citizen-title: #3d484c;
+  --color-card-educator-title: #23296e;
 
-  /* Character card pop-in → use with the class "animate-card-in" */
-  --animate-card-in: card-in 250ms ease-out;
-  @keyframes card-in {
-    from { opacity: 0; transform: translateY(12px) scale(0.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+  /* A player badge appearing on a character card: waits 450ms for the card to
+     flip back, then fades and grows in. Use with the class "animate-badge-in".
+     "backwards" applies the starting (hidden) look during the wait, and lets
+     go once it's done, so hover effects on the badge still work afterwards. */
+  --animate-badge-in: badge-in 200ms ease-out 450ms backwards;
+  @keyframes badge-in {
+    from { opacity: 0; scale: 0.85; }
+    to { opacity: 1; scale: 1; }
   }
-}
 
-/* If you add the Boucherie Cursive font file to public/fonts, this picks it up. */
-@font-face {
-  font-family: "Boucherie Cursive";
-  src: url("/fonts/BoucherieCursive.woff2") format("woff2");
-  font-display: swap;
+
+  /* The tutorial's "click this next" cue: the golden glow gently breathes. */
+  --animate-glow: glow 1.6s ease-in-out infinite;
+  @keyframes glow {
+    0%, 100% { filter: drop-shadow(0px 0px 8px #f5bf5f); }
+    50% { filter: drop-shadow(0px 0px 18px #f5bf5f); }
+  }
+
+  /* The phone's deck: the same gold glow, plus a pulse (the deck swells a
+     little and settles), since phones have no hover to say "tap me". The
+     map is drawn at about a third of its size, so the blur is bigger. */
+  --animate-glow-big: glow-big 1.6s ease-in-out infinite;
+  @keyframes glow-big {
+    0%, 100% { filter: drop-shadow(0px 0px 20px #f5bf5f); scale: 1; }
+    50% { filter: drop-shadow(0px 0px 44px #f5bf5f) drop-shadow(0px 0px 14px #f5bf5f); scale: 1.09; }
+  }
+
+  /* The event card grows out of the deck (bottom left of the popup) into place. */
+  --animate-draw-card: draw-card 550ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+  @keyframes draw-card {
+    from { opacity: 0; translate: -183px 290px; scale: 0.3; rotate: -20deg; }
+    to { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+  }
+
+  /* A piece falling into place on the table: it starts a little above its
+     spot and a little bigger (closer to you, as if held over the table),
+     drops, sinks a hair past its spot and springs back. Pieces use it one
+     after another (see components/dropIn.ts).
+     The whole trip is one smooth curve: just a start and an end, with a
+     spring timing (`linear(...)` lists points on the way; above 1 means
+     "a little past the spot"). Several keyframes with an easing each would
+     make the piece slow down and speed up again at every keyframe. */
+  --animate-drop-in: drop-in 760ms linear(0, 0.22 8%, 0.56 18%, 0.86 29%, 1.03 40%, 1.075 49%, 1.06 58%, 1.015 70%, 0.995 82%, 1) backwards;
+  @keyframes drop-in {
+    from { opacity: 0; translate: 0 -36px; scale: 1.08; }
+    to { opacity: 1; translate: 0 0; scale: 1; }
+  }
+
+  /* A popup appearing: a quick fade and small rise. */
+  --animate-pop-in: pop-in 250ms ease-out backwards;
+  @keyframes pop-in {
+    from { opacity: 0; translate: 0 10px; }
+    to { opacity: 1; translate: 0 0; }
+  }
+
+  /* A dim layer fading in (the phone menu's background). */
+  --animate-fade-in: fade-in 200ms ease-out backwards;
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Phone: a bottom sheet sliding up from the bottom edge. */
+  --animate-sheet-up: sheet-up 320ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+  @keyframes sheet-up {
+    from { translate: 0 100%; }
+    to { translate: 0 0; }
+  }
+
+  /* Token box with too many tokens: a cream layer blinks over the red, so
+     the box flashes red twice and then stays red. */
+  --animate-flash: flash 900ms ease-in-out;
+  @keyframes flash {
+    0%, 50%, 100% { opacity: 0; }
+    25%, 75% { opacity: 1; }
+  }
+
+  --font-mono: "Courier Prime", ui-monospace, monospace;
+  --font-script: "boucherie-cursive", "Dancing Script", cursive;
+  /* Figma's "auto" line height for Boucherie Cursive is 2.44× the font size
+     (the font has very tall ascenders); browsers use ~1.5×. Use "leading-script"
+     on script text placed by its top edge, so it lands where Figma puts it. */
+  --leading-script: 2.44;
 }
 
 html,
@@ -56,13 +157,61 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* The sunset gradient from the Figma "background" layer */
+/* Warm diagonal light from the "01 game overview" frame: peach in the top
+   left, fading to cream in the bottom right. */
+.bg-overview {
+  background-image: linear-gradient(126.26deg, var(--color-peach) 37.346%, var(--color-cream) 92.677%);
+}
+
+/* The game board (overview table, manual): a sunset glow in the middle,
+   fading out to sage green at the edges (Figma: radial gradient, 8 stops).
+   "closest-side" makes the circle reach the edges at any board size. */
+.bg-board {
+  background-image: radial-gradient(
+    circle closest-side at center,
+    var(--color-sky-orange) 0%,
+    #f29b41 14.904%,
+    var(--color-sky-gold) 27.885%,
+    #ecbb5b 45.192%,
+    #cebc7b 57.452%,
+    #b1bd9b 69.712%,
+    #a4bea8 87.019%,
+    var(--color-sky-sage) 100%
+  );
+}
+
+/* Manual page 3 ("Objective"): misty blue at the top warming to peach at the
+   bottom, sampled from the Figma page. */
+.bg-manual-page {
+  background-image: linear-gradient(
+    180deg,
+    #dfe4df 0%,
+    #e8e9d5 28.6%,
+    #f7e9ca 57.2%,
+    #f8e4c5 71.5%,
+    #f5d5bd 100%
+  );
+}
+
+/* The sunset gradient from the Figma "background" layer (screens 01–04) */
 .bg-sky {
   background-image: linear-gradient(
     180deg,
     var(--color-sky-blue) 0%,
-    var(--color-sky-sage) 21%,
-    var(--color-sky-gold) 77%,
+    var(--color-sky-sage) 21.154%,
+    var(--color-sky-gold) 76.923%,
     var(--color-sky-orange) 100%
+  );
+}
+
+/* The tall history frames use the frame's own fill: it reaches full orange
+   a bit earlier (88.462%) and stays orange to the bottom of the page. */
+.bg-sky-page {
+  background-image: linear-gradient(
+    180deg,
+    var(--color-sky-blue) 0%,
+    var(--color-sky-sage) 21.154%,
+    var(--color-sky-gold) 76.923%,
+    var(--color-sky-orange) 88.462%
   );
 }

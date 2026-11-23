@@ -1,0 +1,242 @@
+import { useEffect, useRef } from 'react'
+import { DimOverlay } from '../components/board/GameBoard'
+import { CharacterCard } from '../components/CharacterCard'
+import { FeedbackForm } from '../components/FeedbackForm'
+import { AllocateSheet } from '../components/phone/AllocateSheet'
+import { EventSheet } from '../components/phone/EventSheet'
+import { Counters, PhoneCharacterCards, PhoneMap, PhonePlaces, PhoneTracker, PlayersStrip, StripLabel, TopBar, TopButton } from '../components/phone/PhoneBoard'
+import { PhoneManual } from '../components/phone/PhoneManual'
+import { PhoneMenu } from '../components/phone/PhoneMenu'
+import { PhoneStage } from '../components/phone/PhoneStage'
+import { CityBankCard } from '../components/popups/ExplorePopups'
+import { GameEnd } from '../components/popups/GameEnd'
+import { FlyingStars, MetricChangePopup } from '../components/popups/MetricChangePopup'
+import { SmallButton } from '../components/SmallButton'
+import { STAR_PHOTOS, type MapStarId } from '../data/explore'
+import { roundsUntilReset } from '../data/gameRules'
+import { gameSummary } from '../game/debrief'
+import { canAfford } from '../game/state'
+import { feedbackAvailable } from '../feedback'
+import type { GameProps } from './Game'
+import { useGameFlow } from './useGameFlow'
+
+// The game board on a phone, or a tablet held upright (Figma "6b · mobile
+// hi-fi", M1 to M4). The same game as the desktop board (the steps are in
+// useGameFlow.ts), laid out in a column:
+//
+//   play mode                                explore mode (M5)
+//   menu · Round 7 of 15 · Token reset in 3  menu · play mode · how to play
+//   score tracker                            map with tappable stars
+//   map with the event deck (tap to draw)    places: the stars' photos
+//                                            all six character cards
+//   players strip (swipe; tap for a card)
+//
+// The round's popups are bottom sheets (event card, tokens), and the metric
+// popup sits over the tracker so the stars have a short way to fly. Explore
+// popups (a star's photo, a character's card) open in the middle; tap
+// outside or press Esc to close them.
+//
+// The end cards are the desktop ones, shrunk to fit, until a phone design
+// for them exists.
+
+export function GamePhone({ game, setGame, onLearnMore, onRestart }: GameProps) {
+  const flow = useGameFlow(game, setGame)
+  const { mode, phase, setPhase, selected, setSelected, popup, setPopup, flights, card, option, over, roundPopup, showEnd } = flow
+  const exploring = mode === 'explore'
+  const playing = mode === 'play'
+
+  // When the stars are about to fly, scroll back up so the tracker is in view
+  const scroller = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (phase === 'metrics') scroller.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [phase])
+
+  const menuItems = [
+    { label: 'new game', onClick: () => setPopup({ kind: 'new-game' }) },
+    { label: 'how to play', onClick: () => setPopup({ kind: 'manual' }) },
+    { label: 'learn more', onClick: onLearnMore },
+    ...(feedbackAvailable ? [{ label: 'feedback', onClick: () => setPopup({ kind: 'feedback' }) }] : []),
+    { label: exploring ? 'play mode' : 'explore mode', onClick: flow.toggleMode },
+  ]
+  const betweenRounds = phase === 'board' && !over
+  const canDraw = betweenRounds && !!card
+
+  return (
+    <PhoneStage>
+      {/* The board: scrolls if the screen is shorter than Figma's 844px */}
+      <div ref={scroller} className="absolute inset-0 overflow-x-hidden overflow-y-auto">
+        <div className="flex min-h-full flex-col items-center pb-[24px]">
+          <div className="w-full">
+            <TopBar menu={<PhoneMenu items={menuItems} disabled={roundPopup} />}>
+              {exploring ? (
+                <>
+                  <TopButton onClick={flow.toggleMode}>play mode</TopButton>
+                  <TopButton onClick={() => setPopup({ kind: 'manual' })}>how to play</TopButton>
+                </>
+              ) : (
+                <Counters round={game.round} untilReset={over ? undefined : roundsUntilReset(game.round)} />
+              )}
+            </TopBar>
+          </div>
+          {exploring ? (
+            <>
+              <div className="mt-[20px]">
+                <PhoneMap onStar={(star) => setPopup({ kind: 'star', star })} />
+              </div>
+              <div className="mt-[24px] w-full">
+                <PhonePlaces onOpen={(star) => setPopup({ kind: 'star', star })} />
+              </div>
+              <div className="mt-[16px] w-full">
+                <StripLabel>characters</StripLabel>
+              </div>
+              <div className="mt-[13px]">
+                <PhoneCharacterCards onOpen={(id) => setPopup({ kind: 'character', id })} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mt-[20px]">
+                <PhoneTracker metrics={game.metrics} />
+              </div>
+              <div className="mt-[28px]">
+                {/* Touch screens have no hover to say "tap me", so while the
+                    deck waits to be drawn it glows gently, with a hint below */}
+                <PhoneMap glowDeck={canDraw} onDraw={canDraw ? () => setPhase('event') : undefined} />
+              </div>
+              {/* Always in the layout, so nothing moves; it fades out during a
+                  round and back in when the deck can be drawn again */}
+              <p
+                aria-hidden={!canDraw}
+                className={`mt-[22px] font-mono text-[12px] leading-none text-ink-soft italic transition-opacity duration-500 motion-reduce:transition-none ${canDraw ? 'opacity-100' : 'opacity-0'}`}
+              >
+                tap the card stack to draw an event
+              </p>
+              {/* Pushes the players to the bottom on tall screens */}
+              <div className="min-h-[32px] flex-1" />
+              <PlayersStrip
+                players={game.players}
+                spent={game.spent}
+                onCharacter={betweenRounds ? (id) => setPopup({ kind: 'character', id }) : undefined}
+                onCityBank={betweenRounds ? () => setPopup({ kind: 'city-bank' }) : undefined}
+              />
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ---- the round (M2 to M4) ---- */}
+      <DimOverlay visible={(roundPopup && !flights) || showEnd} />
+
+      {playing && phase === 'event' && card && (
+        <EventSheet
+          event={card}
+          selected={selected}
+          onSelect={setSelected}
+          canAfford={(cost) => canAfford(cost, game.players, game.spent)}
+          players={game.players}
+          onContinue={flow.confirmOption}
+        />
+      )}
+
+      {playing && phase === 'allocate' && option && <AllocateSheet cost={option.cost} players={game.players} spent={game.spent} onContinue={flow.confirmAllocation} />}
+
+      {playing && phase === 'metrics' && option && (
+        // Over the tracker (Figma M4: 330 wide at y 230). The popup is the
+        // desktop one at 74%, so it matches it exactly.
+        <div className="absolute top-[230px] left-1/2 z-30 flex -translate-x-1/2 flex-col items-center gap-[26px]">
+          <div style={{ zoom: 330 / 446 }}>
+            <MetricChangePopup effect={option.effect} hidden={!!flights} />
+          </div>
+          {!flights && (
+            <SmallButton width={121} onClick={flow.launchStars}>
+              continue
+            </SmallButton>
+          )}
+        </div>
+      )}
+      {flights && <FlyingStars flights={flights} onLanded={flow.landStars} />}
+
+      {showEnd && (
+        // The desktop end cards (630px wide), shrunk to the screen's width;
+        // their buttons stay full size
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center [&>*]:pointer-events-auto">
+          <GameEnd
+            game={game}
+            step={flow.endStep}
+            setStep={flow.setEndStep}
+            onRestart={() => setPopup({ kind: 'new-game' })}
+            onExplore={() => flow.setMode('explore')}
+            placed={false}
+            cardScale={358 / 630}
+          />
+        </div>
+      )}
+
+      {/* ---- popups: tap outside (or Esc) to close ---- */}
+      {popup?.kind === 'manual' && (
+        <>
+          <button type="button" aria-label="Close" onClick={() => setPopup(null)} className="absolute -inset-[10000px] z-30 cursor-default bg-ink-soft/50" />
+          <PhoneManual onClose={() => setPopup(null)} />
+        </>
+      )}
+      {popup && popup.kind !== 'manual' && (
+        <>
+          <button type="button" aria-label="Close" onClick={() => setPopup(null)} className="absolute -inset-[10000px] z-30 cursor-default bg-ink-soft/50" />
+          <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center px-[16px] [&>*]:pointer-events-auto">
+            {popup.kind === 'star' && <PhonePhoto star={popup.star} />}
+            {popup.kind === 'character' && <CharacterCard id={popup.id} side="description" />}
+            {popup.kind === 'city-bank' && <CityBankCard className="w-full max-w-[400px] [&_h2]:text-[26px] [&_p]:text-[15px]" />}
+            {popup.kind === 'new-game' && <NewGamePhone onRestart={onRestart} onCancel={() => setPopup(null)} />}
+            {popup.kind === 'feedback' && (
+              <div role="dialog" aria-label="Share feedback" className="w-full max-w-[400px] animate-pop-in rounded-[7px] border border-black bg-cream px-[20px] pt-[20px] pb-[22px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] motion-reduce:animate-none">
+                <h2 className="mb-[12px] font-mono text-[24px] leading-none text-ink italic">share feedback</h2>
+                <FeedbackForm context={gameSummary(game)} />
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </PhoneStage>
+  )
+}
+
+/**
+ * A map star's photo on a phone (explore mode): the desktop's photo postcard
+ * (Figma "10 explore / star – …"), as wide as the screen allows.
+ */
+function PhonePhoto({ star }: { star: MapStarId }) {
+  const { photo, caption } = STAR_PHOTOS[star]
+  return (
+    <figure role="dialog" aria-label={caption} className="w-full max-w-[420px] animate-pop-in rounded-[3px] bg-cream px-[10px] pt-[11px] pb-[16px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] motion-reduce:animate-none">
+      <img alt="" src={photo} className="block w-full" />
+      <figcaption className="mt-[11px] px-[4px] font-mono text-[15px] leading-[1.25] text-black italic">{caption}</figcaption>
+    </figure>
+  )
+}
+
+/**
+ * "Start a new game?" on a phone: the same blue postcard as on desktop, but
+ * standing upright (the picture is portrait already; desktop turns it
+ * sideways), with the buttons stacked.
+ */
+function NewGamePhone({ onRestart, onCancel }: { onRestart: () => void; onCancel: () => void }) {
+  return (
+    <div role="alertdialog" aria-labelledby="new-game-title" className="relative h-[436px] w-[270px] animate-pop-in drop-shadow-[0_4px_2px_rgba(0,0,0,0.25)] motion-reduce:animate-none">
+      <img alt="" src="/assets/player-count-card.svg" className="absolute inset-0 size-full" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-[24px]">
+        <p id="new-game-title" className="font-mono text-[22px] text-black italic">
+          Start a new game?
+        </p>
+        <div className="flex flex-col gap-[12px]">
+          <SmallButton width={195} onClick={onRestart}>
+            restart game
+          </SmallButton>
+          <SmallButton width={195} onClick={onCancel} autoFocus>
+            return to game
+          </SmallButton>
+        </div>
+      </div>
+      <img alt="" src="/assets/overview/bird.png" className="absolute right-[26px] bottom-[26px] w-[50px] rotate-[6deg]" />
+    </div>
+  )
+}
