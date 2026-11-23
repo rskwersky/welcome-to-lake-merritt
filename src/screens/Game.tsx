@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from 'react'
 import { BEYOND_STAGE, Board, DimOverlay, EventDeck, PlayerRoster, RoundCounter, ScoreTracker, TotalRounds } from '../components/board/GameBoard'
 import { GameMenu } from '../components/board/GameMenu'
 import { ManualArt } from '../components/board/ManualArt'
@@ -8,23 +7,24 @@ import { FeedbackForm } from '../components/FeedbackForm'
 import { AllocateTokensPopup } from '../components/popups/AllocateTokensPopup'
 import { EventCardPopup } from '../components/popups/EventCardPopup'
 import { CityBankInfo, ManualPopup, NewGameConfirm, PhotoPopup } from '../components/popups/ExplorePopups'
-import { measureFlights } from '../components/popups/flights'
-import { FlyingStars, MetricChangePopup, type Flight } from '../components/popups/MetricChangePopup'
+import { FlyingStars, MetricChangePopup } from '../components/popups/MetricChangePopup'
 import { GameEnd } from '../components/popups/GameEnd'
 import { SmallButton } from '../components/SmallButton'
 import { Stage } from '../components/Stage'
-import { STAR_PHOTOS, type MapStarId } from '../data/explore'
-import type { CharacterId } from '../data/gameRules'
 import { roundsUntilReset } from '../data/gameRules'
 import { gameSummary } from '../game/debrief'
-import { canAfford, finishRound, isGameOver, topCard, type Allocation, type GameState } from '../game/state'
+import { canAfford, type GameState } from '../game/state'
 import { feedbackAvailable } from '../feedback'
+import { usePhoneLayout } from '../hooks/usePhoneLayout'
+import { GamePhone } from './GamePhone'
+import { useGameFlow } from './useGameFlow'
 
 // Figma section "5 · game board + explore mode".
 //
 // Play mode ("09 game board"), one round at a time:
 //   click the deck → event card → (allocate tokens) → stars fly to the
 //   score tracker → next round. Tokens reset after rounds 5 and 10.
+//   (The steps themselves live in useGameFlow.ts, shared with the phone.)
 //
 // Explore mode ("10 explore / …"): look around without playing. The roster
 // becomes the players' cards; map stars, cards and the big manual lift on
@@ -35,77 +35,28 @@ import { feedbackAvailable } from '../feedback'
 // then the debrief one question at a time, then thank you + feedback
 // (components/popups/GameEnd.tsx). Explore mode is still open afterwards.
 //
+// On a phone or a tablet held upright, the same game is laid out in a
+// column instead (Figma "6b · mobile hi-fi", GamePhone.tsx).
+//
 // The game itself (round, deck, tokens, metrics) lives in the App, so it
 // survives a trip to "learn more" and back.
 
-type GameProps = {
+export type GameProps = {
   game: GameState
   setGame: (game: GameState) => void
   onLearnMore: () => void
   onRestart: () => void
 }
 
-type Phase = 'board' | 'event' | 'allocate' | 'metrics'
-type Popup =
-  | { kind: 'star'; star: MapStarId }
-  | { kind: 'character'; id: CharacterId }
-  | { kind: 'city-bank' }
-  | { kind: 'manual' }
-  | { kind: 'new-game' }
-  | { kind: 'feedback' }
-  | null
+export function Game(props: GameProps) {
+  const phone = usePhoneLayout()
+  return phone ? <GamePhone {...props} /> : <GameDesktop {...props} />
+}
 
-export function Game({ game, setGame, onLearnMore, onRestart }: GameProps) {
-  const [mode, setMode] = useState<'play' | 'explore'>('play')
-  const [phase, setPhase] = useState<Phase>('board')
-  const [selected, setSelected] = useState<number | null>(null)
-  const [allocation, setAllocation] = useState<Allocation>({})
-  const [popup, setPopup] = useState<Popup>(null)
-  const [flights, setFlights] = useState<Flight[] | null>(null)
-  // Which end card is showing once the game is over (0 = final report)
-  const [endStep, setEndStep] = useState(0)
-
-  const card = topCard(game)
+function GameDesktop({ game, setGame, onLearnMore, onRestart }: GameProps) {
+  const flow = useGameFlow(game, setGame)
+  const { mode, setMode, phase, setPhase, selected, setSelected, popup, setPopup, flights, card, option, over, roundPopup, showEnd } = flow
   const exploring = mode === 'explore'
-  const option = card && selected !== null ? card.options[selected] : null
-  const over = isGameOver(game)
-
-  // Load the star photos ahead of time, so a photo appears the moment its
-  // star is clicked instead of after a download.
-  useEffect(() => {
-    for (const { photo } of Object.values(STAR_PHOTOS)) new Image().src = photo
-  }, [])
-
-  // Esc closes an explore popup or the new game question.
-  useEffect(() => {
-    if (!popup) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setPopup(null)
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [popup])
-
-  // The round is over once the stars have landed.
-  const landStars = useCallback(() => {
-    setFlights(null)
-    if (!option || selected === null) return
-    const next = finishRound(game, allocation, selected)
-    setGame(next)
-    setPhase('board')
-    setSelected(null)
-    setAllocation({})
-  }, [game, allocation, option, selected, setGame])
-
-  const launchStars = () => {
-    if (!option) return
-    const next = measureFlights(game.metrics, option.effect)
-    if (next.length === 0) landStars()
-    else setFlights(next)
-  }
-
-  const roundPopup = mode === 'play' && phase !== 'board'
-  // The end cards: in play mode once the last stars have landed (and not
-  // under another popup, like the new game question)
-  const showEnd = mode === 'play' && over && !flights && !popup
 
   return (
     <Stage className="bg-overview">
@@ -161,10 +112,7 @@ export function Game({ game, setGame, onLearnMore, onRestart }: GameProps) {
         onNewGame={() => setPopup({ kind: 'new-game' })}
         onLearnMore={onLearnMore}
         onFeedback={feedbackAvailable ? () => setPopup({ kind: 'feedback' }) : undefined}
-        onToggleMode={() => {
-          setPopup(null)
-          setMode(exploring ? 'play' : 'explore')
-        }}
+        onToggleMode={flow.toggleMode}
       />
 
       {/* ---- the round's popups (play mode) ---- */}
@@ -174,8 +122,8 @@ export function Game({ game, setGame, onLearnMore, onRestart }: GameProps) {
       {showEnd && (
         <GameEnd
           game={game}
-          step={endStep}
-          setStep={setEndStep}
+          step={flow.endStep}
+          setStep={flow.setEndStep}
           onRestart={() => setPopup({ kind: 'new-game' })}
           onExplore={() => setMode('explore')}
         />
@@ -190,7 +138,7 @@ export function Game({ game, setGame, onLearnMore, onRestart }: GameProps) {
             onSelect={setSelected}
             canAfford={(cost) => canAfford(cost, game.players, game.spent)}
             players={game.players}
-            onContinue={() => setPhase(option && Object.values(option.cost).some(Boolean) ? 'allocate' : 'metrics')}
+            onContinue={flow.confirmOption}
           />
         </div>
       )}
@@ -201,10 +149,7 @@ export function Game({ game, setGame, onLearnMore, onRestart }: GameProps) {
             cost={option.cost}
             players={game.players}
             spent={game.spent}
-            onContinue={(a) => {
-              setAllocation(a)
-              setPhase('metrics')
-            }}
+            onContinue={flow.confirmAllocation}
           />
         </div>
       )}
@@ -213,13 +158,13 @@ export function Game({ game, setGame, onLearnMore, onRestart }: GameProps) {
         <div className="absolute z-30 flex w-[446px] flex-col items-center gap-[22px]" style={{ left: 497, top: 409 }}>
           <MetricChangePopup effect={option.effect} hidden={!!flights} />
           {!flights && (
-            <SmallButton width={121} onClick={launchStars}>
+            <SmallButton width={121} onClick={flow.launchStars}>
               continue
             </SmallButton>
           )}
         </div>
       )}
-      {flights && <FlyingStars flights={flights} onLanded={landStars} />}
+      {flights && <FlyingStars flights={flights} onLanded={flow.landStars} />}
 
       {/* ---- explore popups and the new game question ---- */}
       {popup && (

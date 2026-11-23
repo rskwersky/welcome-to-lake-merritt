@@ -58,10 +58,7 @@ export function GameMenu({ mode, onNewGame, onLearnMore, onToggleMode, onFeedbac
 
   return (
     <>
-      {/* The booklet (Figma: 69 × 87 at 41, 888): the game overview manual's
-          pages at 0.379×, then its own art at the Figma positions (given as
-          % of the 1440 × 1024 stage): canoe on top, "MENU", pelican below.
-          All of it is then scaled up (BOOKLET) in one go. */}
+      {/* The booklet (<MenuBooklet>, below), scaled up (BOOKLET) in one go */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -69,24 +66,7 @@ export function GameMenu({ mode, onNewGame, onLearnMore, onToggleMode, onFeedbac
           transform: `translate(${BOOKLET.to.x - BOOKLET.from.x}px, ${BOOKLET.to.y - BOOKLET.from.y}px) scale(${BOOKLET.scale})`,
         }}
       >
-        <ManualArt at={{ left: 41.13, top: 888.15 }} scale={0.3792} menu />
-        <div className="absolute inset-0">
-          <div className="absolute inset-[88.43%_94.58%_9.83%_3.53%] flex items-center justify-center" style={{ containerType: 'size' }}>
-            <div className="h-[hypot(93.6696cqw,16.5351cqh)] w-[hypot(6.33041cqw,-83.4649cqh)] flex-none rotate-[-83.4deg]">
-              <img alt="" src={`${A}/manual-canoe.svg`} className="block size-full max-w-none" />
-            </div>
-          </div>
-          <div className="absolute inset-[92.35%_92.81%_5.54%_5.15%] flex items-center justify-center" style={{ containerType: 'size' }}>
-            <div className="h-[hypot(-14.8153cqw,62.8135cqh)] w-[hypot(85.1847cqw,37.1865cqh)] flex-none rotate-[17.79deg]">
-              <img alt="" src={`${A}/manual-bird.png`} className="size-full max-w-none" />
-            </div>
-          </div>
-          <div className="absolute inset-[89.05%_92.81%_7.34%_3.41%] flex items-center justify-center" style={{ containerType: 'size' }}>
-            <div className="h-[hypot(11.8598cqw,65.1263cqh)] w-[hypot(88.1402cqw,-34.8737cqh)] flex-none rotate-[-15.08deg]">
-              <img alt="" src="/assets/explore/menu-label.png" className="size-full max-w-none object-cover" />
-            </div>
-          </div>
-        </div>
+        <MenuBooklet />
       </div>
 
       {/* One hover area covering the buttons and the booklet */}
@@ -125,6 +105,37 @@ export function GameMenu({ mode, onNewGame, onLearnMore, onToggleMode, onFeedbac
           style={{ width: BOOKLET.width, height: BOOKLET.height, marginTop: GAP_ABOVE_BOOKLET, marginLeft: 3 }}
           className="flex-none cursor-pointer rounded-[4px] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink"
         />
+      </div>
+    </>
+  )
+}
+
+/**
+ * The booklet drawing, at its Figma spot on the 1440 × 1024 stage (69 × 87
+ * at 41, 888): the game overview manual's pages at 0.379×, then its own art
+ * placed in % of the stage: canoe on top, "MENU", pelican below. Its parent
+ * must be stage sized. (The phone's top bar draws it too, shrunk.)
+ */
+export function MenuBooklet() {
+  return (
+    <>
+      <ManualArt at={{ left: 41.13, top: 888.15 }} scale={0.3792} menu />
+      <div className="absolute inset-0">
+        <div className="absolute inset-[88.43%_94.58%_9.83%_3.53%] flex items-center justify-center" style={{ containerType: 'size' }}>
+          <div className="h-[hypot(93.6696cqw,16.5351cqh)] w-[hypot(6.33041cqw,-83.4649cqh)] flex-none rotate-[-83.4deg]">
+            <img alt="" src={`${A}/manual-canoe.svg`} className="block size-full max-w-none" />
+          </div>
+        </div>
+        <div className="absolute inset-[92.35%_92.81%_5.54%_5.15%] flex items-center justify-center" style={{ containerType: 'size' }}>
+          <div className="h-[hypot(-14.8153cqw,62.8135cqh)] w-[hypot(85.1847cqw,37.1865cqh)] flex-none rotate-[17.79deg]">
+            <img alt="" src={`${A}/manual-bird.png`} className="size-full max-w-none" />
+          </div>
+        </div>
+        <div className="absolute inset-[89.05%_92.81%_7.34%_3.41%] flex items-center justify-center" style={{ containerType: 'size' }}>
+          <div className="h-[hypot(11.8598cqw,65.1263cqh)] w-[hypot(88.1402cqw,-34.8737cqh)] flex-none rotate-[-15.08deg]">
+            <img alt="" src="/assets/explore/menu-label.png" className="size-full max-w-none object-cover" />
+          </div>
+        </div>
       </div>
     </>
   )

@@ -86,15 +86,22 @@ export function ManualPopup() {
 export function CityBankInfo() {
   return (
     <div className="absolute -translate-y-1/2" style={{ left: 655, top: 512 }}>
-      <div role="dialog" aria-labelledby="city-bank-title" className="w-[480px] animate-pop-in rounded-[7px] border border-black bg-cream px-[28px] pt-[24px] pb-[28px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] motion-reduce:animate-none">
-        <h2 id="city-bank-title" className="font-mono text-[30px] leading-none text-ink italic">
-          city bank
-        </h2>
-        <div className="mt-[16px] flex flex-col gap-[12px] font-mono text-[18px] leading-[1.3] text-ink-soft">
-          <p>The city bank holds the tokens of the characters nobody is playing, so a smaller group has as many tokens to work with as six players.</p>
-          <p>The group can only use a token type from the city bank once every player has used up their own tokens of that type.</p>
-          <p>Like everyone else’s tokens, it refills every five rounds.</p>
-        </div>
+      <CityBankCard className="w-[480px]" />
+    </div>
+  )
+}
+
+/** The city bank explanation card itself (the phone places it on its own). */
+export function CityBankCard({ className = '' }: { className?: string }) {
+  return (
+    <div role="dialog" aria-labelledby="city-bank-title" className={`animate-pop-in rounded-[7px] border border-black bg-cream px-[28px] pt-[24px] pb-[28px] shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] motion-reduce:animate-none ${className}`}>
+      <h2 id="city-bank-title" className="font-mono text-[30px] leading-none text-ink italic">
+        city bank
+      </h2>
+      <div className="mt-[16px] flex flex-col gap-[12px] font-mono text-[18px] leading-[1.3] text-ink-soft">
+        <p>The city bank holds the tokens of the characters nobody is playing, so a smaller group has as many tokens to work with as six players.</p>
+        <p>The group can only use a token type from the city bank once every player has used up their own tokens of that type.</p>
+        <p>Like everyone else’s tokens, it refills every five rounds.</p>
       </div>
     </div>
   )

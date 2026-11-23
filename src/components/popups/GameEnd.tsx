@@ -22,10 +22,13 @@ type GameEndProps = {
   step: number
   setStep: (step: number) => void
   onRestart: () => void
-  onExplore: () => void
+  /** "explore mode" on the last card (left out where there's no explore mode) */
+  onExplore?: () => void
+  /** Center itself on the stage (default). The phone places it itself. */
+  placed?: boolean
 }
 
-export function GameEnd({ game, step, setStep, onRestart, onExplore }: GameEndProps) {
+export function GameEnd({ game, step, setStep, onRestart, onExplore, placed = true }: GameEndProps) {
   const cards = debriefCards(game)
   const last = cards.length + 1
 
@@ -58,9 +61,11 @@ export function GameEnd({ game, step, setStep, onRestart, onExplore }: GameEndPr
         <SmallButton width={195} onClick={onRestart}>
           restart game
         </SmallButton>
-        <SmallButton width={195} onClick={onExplore}>
-          explore mode
-        </SmallButton>
+        {onExplore && (
+          <SmallButton width={195} onClick={onExplore}>
+            explore mode
+          </SmallButton>
+        )}
       </>
     )
   }
@@ -68,7 +73,7 @@ export function GameEnd({ game, step, setStep, onRestart, onExplore }: GameEndPr
   return (
     // Centered on the stage. (The pop-in animation sits on the card inside:
     // both use `translate`, so they can't share an element.)
-    <div className="absolute top-1/2 left-1/2 z-30 flex -translate-1/2 flex-col items-center gap-[22px]">
+    <div className={`flex flex-col items-center gap-[22px] ${placed ? 'absolute top-1/2 left-1/2 z-30 -translate-1/2' : ''}`}>
       {/* Pops in once, when the ending first appears. Moving between steps
           swaps the card at once (no fade each time, which felt laggy). */}
       <div className="animate-pop-in motion-reduce:animate-none">{card}</div>

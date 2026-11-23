@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { getCharacter } from '../../data/characters'
 import type { MapStarId } from '../../data/explore'
-import { TOKEN_ORDER, TOTAL_ROUNDS, TRACKER, pointsToStars, type CharacterId } from '../../data/gameRules'
+import { TOKEN_ORDER, TOTAL_ROUNDS, TRACKER, pointsToStars, type CharacterId, type Metric } from '../../data/gameRules'
 import { BAR_HEIGHT, BAR_WIDTH, PADDING, ROW_GAP, ROW_HEIGHT, SLOT_WIDTH, STAR, TRACKER_BOX } from './trackerLayout'
 import { METRIC_ROWS, hasCityBank, remaining, startingTokens, type Metrics, type Player, type Spent } from '../../game/state'
 import { CharacterToken } from '../CharacterToken'
@@ -155,13 +155,16 @@ export function RatingStar({ negative, half, className = '', style }: { negative
   )
 }
 
-/** One metric's bar: the stars for its current value. */
-function MetricBar({ points }: { points: number }) {
+/**
+ * One metric's bar: the stars for its current value. `data-tracker-bar`
+ * lets the flying stars find it on screen (popups/flights.ts).
+ */
+function MetricBar({ metric, points }: { metric: Metric; points: number }) {
   const stars = pointsToStars(points)
   const negative = stars < 0
   const count = Math.abs(stars)
   return (
-    <div className="relative rounded-[1.5px] border border-ink-soft bg-cream" style={{ width: BAR_WIDTH, height: BAR_HEIGHT }}>
+    <div data-tracker-bar={metric} className="relative rounded-[1.5px] border border-ink-soft bg-cream" style={{ width: BAR_WIDTH, height: BAR_HEIGHT }}>
       {/* The zero line. (-1px everywhere: positions are measured from the
           bar's outer edge, but children start inside its 1px border.) */}
       <div className="absolute inset-y-0 w-px bg-ink-soft" style={{ left: TRACKER.zeroAfterSlot * SLOT_WIDTH - 1.5 }} />
@@ -191,16 +194,20 @@ function MetricBar({ points }: { points: number }) {
   )
 }
 
-export function ScoreTracker({ metrics, raised }: { metrics: Metrics; raised?: boolean }) {
+/**
+ * The score tracker card itself: a bar of stars per metric, with its name.
+ * Placed on the board by <ScoreTracker>; the phone layout places it itself.
+ */
+export function ScoreTrackerCard({ metrics, className = '', style }: { metrics: Metrics; className?: string; style?: CSSProperties }) {
   return (
     <div
-      className={`absolute flex w-[222.951px] flex-col rounded-[5px] border border-black bg-cream ${lift(raised)}`}
-      style={{ left: TRACKER_BOX.left, top: TRACKER_BOX.top, gap: ROW_GAP, padding: `${PADDING.top}px ${PADDING.x}px 12px` }}
+      className={`flex w-[222.951px] flex-col rounded-[5px] border border-black bg-cream ${className}`}
+      style={{ gap: ROW_GAP, padding: `${PADDING.top}px ${PADDING.x}px 12px`, ...style }}
       aria-label="Score tracker"
     >
       {METRIC_ROWS.map(({ metric, label }) => (
         <div key={metric} className="relative" style={{ height: ROW_HEIGHT }}>
-          <MetricBar points={metrics[metric]} />
+          <MetricBar metric={metric} points={metrics[metric]} />
           <p className="absolute top-[23.24px] left-0 font-mono text-[12px] leading-[0.94] text-ink-soft">
             {label}
             <span className="sr-only">: {pointsToStars(metrics[metric])} stars</span>
@@ -209,6 +216,11 @@ export function ScoreTracker({ metrics, raised }: { metrics: Metrics; raised?: b
       ))}
     </div>
   )
+}
+
+/** The score tracker at its spot on the board (top right). */
+export function ScoreTracker({ metrics, raised }: { metrics: Metrics; raised?: boolean }) {
+  return <ScoreTrackerCard metrics={metrics} className={`absolute ${lift(raised)}`} style={{ left: TRACKER_BOX.left, top: TRACKER_BOX.top }} />
 }
 
 // ---------------------------------------------------------------------------

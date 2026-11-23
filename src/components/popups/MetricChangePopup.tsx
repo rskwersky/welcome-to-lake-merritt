@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Effect } from '../../data/events'
 import { pointsToStars, type Metric } from '../../data/gameRules'
 import { METRIC_ROWS } from '../../game/state'
-import { STAR } from '../board/trackerLayout'
+import { STAR_ASPECT } from '../board/trackerLayout'
 import { Star } from '../Star'
 
 // Figma's `metric-change-popup` (tutorial step 6, and every round): how the
@@ -68,8 +68,12 @@ export function MetricChangePopup({ effect, hidden }: { effect: Effect; hidden?:
 // ---------------------------------------------------------------------------
 
 export type Flight = {
+  /** Centers of the star where it starts (popup) and lands (tracker), in frame px */
   from: { x: number; y: number }
   to: { x: number; y: number }
+  /** Width of a whole star at the start and at the landing (the popup's stars are bigger) */
+  fromWidth: number
+  toWidth: number
   negative: boolean
   half: boolean
 }
@@ -78,7 +82,8 @@ export type Flight = {
  * Stars travelling from the popup to the score tracker. Each star starts
  * where its popup star was, then (one frame later, so the browser has drawn
  * the starting spot) glides to its tracker slot, shrinking as it goes.
- * All positions are stage px (1440×1024).
+ * All positions are frame px: the desktop stage or the phone frame
+ * (see flights.ts).
  *
  * To make the path a gentle curve instead of a straight line, the move is
  * split across two layers: the outer layer moves sideways and slows down
@@ -116,34 +121,34 @@ export function FlyingStars({ flights, onLanded }: { flights: Flight[]; onLanded
     return () => clearTimeout(timer)
   })
 
-  const small = STAR.width / BIG.width // tracker star size ÷ popup star size
   const last = flights.length - 1
   return (
     <div className="pointer-events-none absolute inset-0 z-40" aria-hidden="true">
       {flights.map((f, i) => {
         const timing = { transitionDuration: `${DURATION}ms`, transitionDelay: `${i * STAGGER}ms` }
+        const width = f.fromWidth
         return (
           <div
             key={i}
             className="absolute transition-[translate] ease-[cubic-bezier(0.25,0.6,0.35,1)]"
             // `from` and `to` are the centers of the star; it shrinks around its center.
             style={{
-              left: f.from.x - (f.half ? BIG.width / 4 : BIG.width / 2),
-              top: f.from.y - BIG.height / 2,
+              left: f.from.x - (f.half ? width / 4 : width / 2),
+              top: f.from.y - (width * STAR_ASPECT) / 2,
               translate: launched ? `${f.to.x - f.from.x}px 0` : '0 0',
               ...timing,
             }}
           >
             <div
               className="transition-[translate,scale] ease-[cubic-bezier(0.55,0,0.75,0.6)]"
-              style={{ translate: launched ? `0 ${f.to.y - f.from.y}px` : '0 0', scale: launched ? small : 1, ...timing }}
+              style={{ translate: launched ? `0 ${f.to.y - f.from.y}px` : '0 0', scale: launched ? f.toWidth / width : 1, ...timing }}
               // The last star to leave is the last to arrive: when it has
               // finished moving, the stars are all in place. (Measuring the
               // end instead of guessing it with a timer means no star is
               // ever removed mid-flight.)
               onTransitionEnd={i === last ? (e) => e.propertyName === 'translate' && land() : undefined}
             >
-              <Star width={BIG.width} negative={f.negative} half={f.half} outline={OUTLINE} />
+              <Star width={width} negative={f.negative} half={f.half} outline={(OUTLINE * width) / BIG.width} />
             </div>
           </div>
         )

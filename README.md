@@ -57,6 +57,12 @@ directly, with made-up players (only in development, never on the built site):
 Screen names: `game-overview`, `landing`, `history-short`, `how-to-play`,
 `player-count`, `character-select`, `tutorial`, `game`, `game-over`. See `src/devStart.ts`.
 
+**Phone layout:** the game board switches to its phone layout on any screen
+held upright (taller than wide, under 1100px wide). To try it on a computer,
+open the browser's device toolbar (Chrome: View → Developer → Developer Tools,
+then the phone icon) and pick an iPhone or iPad, then open
+`?screen=game&players=4&round=7`.
+
 ## Feedback form
 
 The last end card (and "feedback" in the menu) has a text box that emails
@@ -119,10 +125,12 @@ src/
     Tip.tsx            The tutorial's tip box and arrow button
     board/             The game board: map, deck, round counter, score tracker, roster
     popups/            Event card, allocate tokens, metric change
+    phone/             The phone layout: PhoneStage, board column, bottom sheets, menu
   game/
     state.ts           Game logic: who holds which tokens, the city bank rule, metrics
   hooks/
     useInView.ts       "Has this scrolled into view?" — drives the history fade-ins
+    usePhoneLayout.ts  "Is this screen held upright?" — picks the phone layout
   screens/             One file per screen (see table above)
 scripts/
   fetch-assets.mjs     Downloads the Figma images
@@ -135,6 +143,9 @@ scripts/
 - **The stage.** `Stage.tsx` lets the game screens use the exact pixel positions from
   Figma, then scales the whole frame with a CSS `transform`. The history page is a
   normal scrolling page instead, so it reflows on phones.
+- **One game, two layouts.** `useGameFlow.ts` holds how a round moves along; the
+  desktop board (`Game.tsx`) and the phone board (`GamePhone.tsx`) both use it and
+  only differ in how things are laid out.
 - **State drives looks.** `CharacterSelect.tsx` stores one value, `selectedId`.
   Every icon's state (`default`, `active`, `dimmed`) is computed from it, so the UI
   can't get out of sync.
@@ -154,8 +165,10 @@ scripts/
 - **Script font:** *Boucherie Cursive* is an Adobe Font, loaded from the Adobe web
   project in `index.html`. Adobe only serves it to domains listed in that web project,
   so add the deploy domain there. *Dancing Script* shows if it can't load.
-- **Phones:** the stage-scaled screens shrink to fit, which works but gets small on
-  phones. The history page is fully responsive.
+- **Phones:** the game board has a phone layout (Figma "6b · mobile hi-fi", M1 to M4).
+  Still to build for phones: explore mode (M5), character select (M6), the game
+  overview (M7) and the tutorial (M8); until then those screens shrink to fit. The end
+  cards on a phone are the desktop ones, shrunk. The history page is fully responsive.
 
 ## Deploy
 

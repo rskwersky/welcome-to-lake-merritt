@@ -1,8 +1,7 @@
-// Where things sit inside the score tracker (stage px), shared by the
-// tracker itself and by the stars that fly into it.
+// Sizes inside the score tracker (stage px), shared by the tracker itself
+// and by the stars that fly into it.
 
-import { TRACKER, type Metric } from '../../data/gameRules'
-import { METRIC_ROWS } from '../../game/state'
+import { TRACKER } from '../../data/gameRules'
 
 // The tracker's geometry, exported so stars can "fly" to the right slot.
 // Each bar has TRACKER.slots star slots; zero is after slot TRACKER.zeroAfterSlot
@@ -14,15 +13,7 @@ export const SLOT_WIDTH = BAR_WIDTH / TRACKER.slots
 export const ROW_HEIGHT = 34.52 // bar + label
 export const ROW_GAP = 10
 export const PADDING = { x: 12, top: 14 }
-// The tracker's star size (height = width × the star shape's 29.31 / 30.71)
+// Every star's height is its width × this (the star shape is 30.71 × 29.31)
+export const STAR_ASPECT = 29.3091 / 30.7142
+// The tracker's star size
 export const STAR = { width: 10.79, height: 10.3 }
-
-/** Stage x/y of the center of star `index` (0 = nearest zero) on a metric's bar. */
-export function starSlotCenter(metric: Metric, index: number, negative: boolean) {
-  const row = METRIC_ROWS.findIndex((r) => r.metric === metric)
-  const barLeft = TRACKER_BOX.left + 1 + PADDING.x
-  const barTop = TRACKER_BOX.top + 1 + PADDING.top + row * (ROW_HEIGHT + ROW_GAP)
-  const slot = negative ? TRACKER.zeroAfterSlot - 1 - index : TRACKER.zeroAfterSlot + index
-  return { x: barLeft + (slot + 0.5) * SLOT_WIDTH, y: barTop + BAR_HEIGHT / 2 }
-}
-

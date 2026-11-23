@@ -34,13 +34,14 @@ type EventCardPopupProps = {
  * The characters in this game who back an option: their round tokens at the
  * right of the option, so players know who should argue for it. Characters
  * nobody plays are left out (no one at the table speaks for them).
+ * `row`: "backed by" beside the tokens instead of above them (phone).
  */
-function Backers({ ids, players }: { ids: CharacterId[]; players: Player[] }) {
+export function Backers({ ids, players, row = false }: { ids: CharacterId[]; players: Player[]; row?: boolean }) {
   const backers = players.filter((p) => ids.includes(p.character))
   if (backers.length === 0) return null
   const names = backers.map((p) => `Player ${p.number} (${getCharacter(p.character).name})`).join(' and ')
   return (
-    <span className="flex shrink-0 flex-col items-center gap-[3px]" aria-label={`Backed by ${names}`} title={`Backed by ${names}`}>
+    <span className={`flex shrink-0 items-center ${row ? 'gap-[8px]' : 'flex-col gap-[3px]'}`} aria-label={`Backed by ${names}`} title={`Backed by ${names}`}>
       <span className="font-mono text-[11px] leading-none whitespace-nowrap text-ink-soft not-italic">backed by</span>
       <span className="flex gap-[3px]">
         {backers.map((p) => (
