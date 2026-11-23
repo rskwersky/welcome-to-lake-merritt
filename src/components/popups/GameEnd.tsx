@@ -26,9 +26,17 @@ type GameEndProps = {
   onExplore?: () => void
   /** Center itself on the stage (default). The phone places it itself. */
   placed?: boolean
+  /**
+   * Phone: draw the card at this size (it's 630px wide) but keep the
+   * buttons full size, as wide as their words, like continue and select.
+   */
+  cardScale?: number
 }
 
-export function GameEnd({ game, step, setStep, onRestart, onExplore, placed = true }: GameEndProps) {
+export function GameEnd({ game, step, setStep, onRestart, onExplore, placed = true, cardScale }: GameEndProps) {
+  // Desktop: Figma's 195px buttons. Phone: as wide as the label (at least continue's 121px).
+  const width = cardScale ? undefined : 195
+  const phoneButton = cardScale ? 'min-w-[121px]' : ''
   const cards = debriefCards(game)
   const last = cards.length + 1
 
@@ -37,7 +45,7 @@ export function GameEnd({ game, step, setStep, onRestart, onExplore, placed = tr
   if (step === 0) {
     card = <FinalReport game={game} />
     buttons = (
-      <SmallButton width={195} onClick={() => setStep(1)}>
+      <SmallButton width={width} className={phoneButton} onClick={() => setStep(1)}>
         debrief
       </SmallButton>
     )
@@ -46,10 +54,10 @@ export function GameEnd({ game, step, setStep, onRestart, onExplore, placed = tr
     card = <DebriefFlipCard key={step} card={cards[step - 1]} number={step} of={cards.length} />
     buttons = (
       <>
-        <SmallButton width={195} onClick={() => setStep(step - 1)}>
+        <SmallButton width={width} className={phoneButton} onClick={() => setStep(step - 1)}>
           back
         </SmallButton>
-        <SmallButton width={195} onClick={() => setStep(step + 1)}>
+        <SmallButton width={width} className={phoneButton} onClick={() => setStep(step + 1)}>
           next
         </SmallButton>
       </>
@@ -58,11 +66,11 @@ export function GameEnd({ game, step, setStep, onRestart, onExplore, placed = tr
     card = <ThankYouNote game={game} />
     buttons = (
       <>
-        <SmallButton width={195} onClick={onRestart}>
+        <SmallButton width={width} className={phoneButton} onClick={onRestart}>
           restart game
         </SmallButton>
         {onExplore && (
-          <SmallButton width={195} onClick={onExplore}>
+          <SmallButton width={width} className={phoneButton} onClick={onExplore}>
             explore mode
           </SmallButton>
         )}
@@ -76,7 +84,10 @@ export function GameEnd({ game, step, setStep, onRestart, onExplore, placed = tr
     <div className={`flex flex-col items-center gap-[22px] ${placed ? 'absolute top-1/2 left-1/2 z-30 -translate-1/2' : ''}`}>
       {/* Pops in once, when the ending first appears. Moving between steps
           swaps the card at once (no fade each time, which felt laggy). */}
-      <div className="animate-pop-in motion-reduce:animate-none">{card}</div>
+      {/* CSS zoom (unlike a transform) also shrinks the space the card takes */}
+      <div className="animate-pop-in motion-reduce:animate-none" style={cardScale ? { zoom: cardScale } : undefined}>
+        {card}
+      </div>
       <div className="flex gap-[11px]">{buttons}</div>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button } from '../components/Button'
 import { Postcard } from '../components/Postcard'
+import { dropIn } from '../components/dropIn'
 import { Stage } from '../components/Stage'
 
 // Figma screens "02 landing" → "03 did you know".
@@ -19,7 +20,10 @@ export function Landing({ onLearnMore }: LandingProps) {
     <Stage className="bg-sky">
       {/* Figma: the card sits 334px from the top, the button 29px below it */}
       <div className="absolute inset-x-0 top-[334px] flex flex-col items-center gap-[29px]">
-        <Postcard flipped={flipped} onClick={flipped ? undefined : () => setFlipped(true)} />
+        {/* The postcard falls into place when the screen appears */}
+        <div {...dropIn(1)}>
+          <Postcard flipped={flipped} onClick={flipped ? undefined : () => setFlipped(true)} />
+        </div>
 
         {/* The button is in the layout from the start (just invisible),
             so the postcard doesn't jump when it fades in after the flip. */}

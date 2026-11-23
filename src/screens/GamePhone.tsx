@@ -4,7 +4,8 @@ import { CharacterCard } from '../components/CharacterCard'
 import { FeedbackForm } from '../components/FeedbackForm'
 import { AllocateSheet } from '../components/phone/AllocateSheet'
 import { EventSheet } from '../components/phone/EventSheet'
-import { Counters, PhoneCharacterCards, PhoneMap, PhoneTracker, PlayersStrip, TopBar, TopButton } from '../components/phone/PhoneBoard'
+import { Counters, PhoneCharacterCards, PhoneMap, PhonePlaces, PhoneTracker, PlayersStrip, StripLabel, TopBar, TopButton } from '../components/phone/PhoneBoard'
+import { PhoneManual } from '../components/phone/PhoneManual'
 import { PhoneMenu } from '../components/phone/PhoneMenu'
 import { PhoneStage } from '../components/phone/PhoneStage'
 import { CityBankCard } from '../components/popups/ExplorePopups'
@@ -24,9 +25,10 @@ import { useGameFlow } from './useGameFlow'
 // useGameFlow.ts), laid out in a column:
 //
 //   play mode                                explore mode (M5)
-//   menu · Round 7 of 15 · Token reset in 3  menu · play mode · learn more
+//   menu · Round 7 of 15 · Token reset in 3  menu · play mode · how to play
 //   score tracker                            map with tappable stars
-//   map with the event deck (tap to draw)    all six character cards
+//   map with the event deck (tap to draw)    places: the stars' photos
+//                                            all six character cards
 //   players strip (swipe; tap for a card)
 //
 // The round's popups are bottom sheets (event card, tokens), and the metric
@@ -51,11 +53,13 @@ export function GamePhone({ game, setGame, onLearnMore, onRestart }: GameProps) 
 
   const menuItems = [
     { label: 'new game', onClick: () => setPopup({ kind: 'new-game' }) },
+    { label: 'how to play', onClick: () => setPopup({ kind: 'manual' }) },
     { label: 'learn more', onClick: onLearnMore },
     ...(feedbackAvailable ? [{ label: 'feedback', onClick: () => setPopup({ kind: 'feedback' }) }] : []),
     { label: exploring ? 'play mode' : 'explore mode', onClick: flow.toggleMode },
   ]
   const betweenRounds = phase === 'board' && !over
+  const canDraw = betweenRounds && !!card
 
   return (
     <PhoneStage>
@@ -63,11 +67,11 @@ export function GamePhone({ game, setGame, onLearnMore, onRestart }: GameProps) 
       <div ref={scroller} className="absolute inset-0 overflow-x-hidden overflow-y-auto">
         <div className="flex min-h-full flex-col items-center pb-[24px]">
           <div className="w-full">
-            <TopBar menu={<PhoneMenu items={menuItems} />}>
+            <TopBar menu={<PhoneMenu items={menuItems} disabled={roundPopup} />}>
               {exploring ? (
                 <>
                   <TopButton onClick={flow.toggleMode}>play mode</TopButton>
-                  <TopButton onClick={onLearnMore}>learn more</TopButton>
+                  <TopButton onClick={() => setPopup({ kind: 'manual' })}>how to play</TopButton>
                 </>
               ) : (
                 <Counters round={game.round} untilReset={over ? undefined : roundsUntilReset(game.round)} />
@@ -79,7 +83,13 @@ export function GamePhone({ game, setGame, onLearnMore, onRestart }: GameProps) 
               <div className="mt-[20px]">
                 <PhoneMap onStar={(star) => setPopup({ kind: 'star', star })} />
               </div>
-              <div className="mt-[40px]">
+              <div className="mt-[24px] w-full">
+                <PhonePlaces onOpen={(star) => setPopup({ kind: 'star', star })} />
+              </div>
+              <div className="mt-[16px] w-full">
+                <StripLabel>characters</StripLabel>
+              </div>
+              <div className="mt-[13px]">
                 <PhoneCharacterCards onOpen={(id) => setPopup({ kind: 'character', id })} />
               </div>
             </>
@@ -89,8 +99,18 @@ export function GamePhone({ game, setGame, onLearnMore, onRestart }: GameProps) 
                 <PhoneTracker metrics={game.metrics} />
               </div>
               <div className="mt-[28px]">
-                <PhoneMap onDraw={betweenRounds && card ? () => setPhase('event') : undefined} />
+                {/* Touch screens have no hover to say "tap me", so while the
+                    deck waits to be drawn it glows gently, with a hint below */}
+                <PhoneMap glowDeck={canDraw} onDraw={canDraw ? () => setPhase('event') : undefined} />
               </div>
+              {/* Always in the layout, so nothing moves; it fades out during a
+                  round and back in when the deck can be drawn again */}
+              <p
+                aria-hidden={!canDraw}
+                className={`mt-[22px] font-mono text-[12px] leading-none text-ink-soft italic transition-opacity duration-500 motion-reduce:transition-none ${canDraw ? 'opacity-100' : 'opacity-0'}`}
+              >
+                tap the card stack to draw an event
+              </p>
               {/* Pushes the players to the bottom on tall screens */}
               <div className="min-h-[32px] flex-1" />
               <PlayersStrip
@@ -137,14 +157,29 @@ export function GamePhone({ game, setGame, onLearnMore, onRestart }: GameProps) 
       {flights && <FlyingStars flights={flights} onLanded={flow.landStars} />}
 
       {showEnd && (
-        // The desktop end cards (630px wide), shrunk to the screen's width
-        <div className="absolute top-1/2 left-1/2 z-30" style={{ transform: `translate(-50%, -50%) scale(${358 / 630})` }}>
-          <GameEnd game={game} step={flow.endStep} setStep={flow.setEndStep} onRestart={() => setPopup({ kind: 'new-game' })} onExplore={() => flow.setMode('explore')} placed={false} />
+        // The desktop end cards (630px wide), shrunk to the screen's width;
+        // their buttons stay full size
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center [&>*]:pointer-events-auto">
+          <GameEnd
+            game={game}
+            step={flow.endStep}
+            setStep={flow.setEndStep}
+            onRestart={() => setPopup({ kind: 'new-game' })}
+            onExplore={() => flow.setMode('explore')}
+            placed={false}
+            cardScale={358 / 630}
+          />
         </div>
       )}
 
       {/* ---- popups: tap outside (or Esc) to close ---- */}
-      {popup && (
+      {popup?.kind === 'manual' && (
+        <>
+          <button type="button" aria-label="Close" onClick={() => setPopup(null)} className="absolute -inset-[10000px] z-30 cursor-default bg-ink-soft/50" />
+          <PhoneManual onClose={() => setPopup(null)} />
+        </>
+      )}
+      {popup && popup.kind !== 'manual' && (
         <>
           <button type="button" aria-label="Close" onClick={() => setPopup(null)} className="absolute -inset-[10000px] z-30 cursor-default bg-ink-soft/50" />
           <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center px-[16px] [&>*]:pointer-events-auto">

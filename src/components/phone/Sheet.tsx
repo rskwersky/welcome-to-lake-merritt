@@ -5,7 +5,8 @@ import type { ReactNode } from 'react'
 // and a small grabber bar. Its content scrolls when it's taller than the
 // screen; the footer (the continue button) always stays in view.
 //
-// The round's sheets can't be swiped away: the group has to decide.
+// The round's sheets can't be closed: the group has to decide. Sheets that
+// are only for reading (the manual) get a ✕.
 
 type SheetProps = {
   /** The id of the sheet's title, or a label when it has none */
@@ -15,9 +16,11 @@ type SheetProps = {
   footer?: ReactNode
   /** A tutorial tip, shown above the content */
   note?: ReactNode
+  /** Sheets you only read (the manual) can be closed: a ✕ in the corner */
+  onClose?: () => void
 }
 
-export function Sheet({ labelledBy, label, children, footer, note }: SheetProps) {
+export function Sheet({ labelledBy, label, children, footer, note, onClose }: SheetProps) {
   return (
     <div
       role="dialog"
@@ -27,6 +30,16 @@ export function Sheet({ labelledBy, label, children, footer, note }: SheetProps)
       className="absolute inset-x-0 bottom-0 z-30 flex max-h-[calc(100%-40px)] animate-sheet-up flex-col rounded-t-[16px] border border-b-0 border-ink-soft bg-cream shadow-[0px_-4px_10px_rgba(0,0,0,0.12)] motion-reduce:animate-none"
     >
       <div aria-hidden="true" className="mx-auto mt-[12px] h-[4px] w-[40px] shrink-0 rounded-[2px] bg-ink-soft/25" />
+      {onClose && (
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          className="absolute top-[10px] right-[10px] z-10 flex size-[44px] cursor-pointer items-center justify-center rounded-full font-mono text-[24px] leading-none text-ink-soft hover:bg-peach focus-visible:outline-2 focus-visible:outline-ink"
+        >
+          <span aria-hidden="true">✕</span>
+        </button>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-[20px] pt-[28px] pb-[8px]">
         {note && (
           // The tutorial's tip box (like <Tip>), smaller for a phone

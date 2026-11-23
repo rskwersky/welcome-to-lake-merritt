@@ -1,6 +1,7 @@
 import { BEYOND_STAGE, Board, DimOverlay, EventDeck, PlayerRoster, RoundCounter, ScoreTracker, TotalRounds } from '../components/board/GameBoard'
 import { GameMenu } from '../components/board/GameMenu'
-import { ManualArt } from '../components/board/ManualArt'
+import { PlacesGallery } from '../components/board/PlacesGallery'
+import { TokenGuide } from '../components/board/TokenGuide'
 import { PlayerCards } from '../components/board/PlayerCards'
 import { CharacterCard } from '../components/CharacterCard'
 import { FeedbackForm } from '../components/FeedbackForm'
@@ -27,7 +28,7 @@ import { useGameFlow } from './useGameFlow'
 //   (The steps themselves live in useGameFlow.ts, shared with the phone.)
 //
 // Explore mode ("10 explore / …"): look around without playing. The roster
-// becomes the players' cards; map stars, cards and the big manual lift on
+// becomes the players' cards; map stars, cards and the places gallery lift on
 // hover and open popups. Click outside a popup (or press Esc) to close it.
 // "play mode" goes back to exactly where the game was.
 //
@@ -79,22 +80,11 @@ function GameDesktop({ game, setGame, onLearnMore, onRestart }: GameProps) {
             open={popup?.kind === 'character' ? popup.id : null}
             onOpen={(id) => setPopup({ kind: 'character', id })}
           />
-          {/* The big manual (bottom right): lifts on hover, opens the rule pages.
-              The lifting layer must cover the whole stage (absolute inset-0):
-              anything that moves becomes the frame its drawing is measured
-              from, and the drawing's pieces are placed in % of the stage. */}
-          <div className="group/manual">
-            <div className="pointer-events-none absolute inset-0 transition-[translate] duration-200 group-hover/manual:-translate-y-1.5 motion-reduce:transition-none motion-reduce:group-hover/manual:translate-y-0">
-              <ManualArt at={{ left: 1162.52, top: 707.89 }} scale={1.191} />
-            </div>
-            <button
-              type="button"
-              aria-label="Open the game manual"
-              onClick={() => setPopup({ kind: 'manual' })}
-              className="absolute z-10 h-[266px] w-[217px] cursor-pointer rounded-[6px] focus-visible:outline-3 focus-visible:outline-ink"
-              style={{ left: 1162.52, top: 707.89 }}
-            />
-          </div>
+          {/* Under the cards: what the tokens stand for. Along the bottom:
+              the places, the map stars' photos. (The manual is in the menu,
+              "how to play".) */}
+          <TokenGuide />
+          <PlacesGallery onOpen={(star) => setPopup({ kind: 'star', star })} />
         </>
       ) : (
         // Between rounds, click a character token for their motivation card,
@@ -112,6 +102,7 @@ function GameDesktop({ game, setGame, onLearnMore, onRestart }: GameProps) {
         onNewGame={() => setPopup({ kind: 'new-game' })}
         onLearnMore={onLearnMore}
         onFeedback={feedbackAvailable ? () => setPopup({ kind: 'feedback' }) : undefined}
+        onHowToPlay={() => setPopup({ kind: 'manual' })}
         onToggleMode={flow.toggleMode}
       />
 
@@ -195,7 +186,7 @@ function GameDesktop({ game, setGame, onLearnMore, onRestart }: GameProps) {
           {/* The player cards stay clickable above the overlay, to switch characters */}
           {popup.kind === 'character' && exploring && (
             <div className="absolute inset-0 z-50 pointer-events-none [&>*]:pointer-events-auto">
-              <PlayerCards open={popup.id} onOpen={(id) => setPopup({ kind: 'character', id })} />
+              <PlayerCards open={popup.id} onOpen={(id) => setPopup({ kind: 'character', id })} drop={false} />
             </div>
           )}
         </>

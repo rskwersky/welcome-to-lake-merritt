@@ -76,11 +76,34 @@
     50% { filter: drop-shadow(0px 0px 18px #f5bf5f); }
   }
 
+  /* The phone's deck: the same gold glow, plus a pulse (the deck swells a
+     little and settles), since phones have no hover to say "tap me". The
+     map is drawn at about a third of its size, so the blur is bigger. */
+  --animate-glow-big: glow-big 1.6s ease-in-out infinite;
+  @keyframes glow-big {
+    0%, 100% { filter: drop-shadow(0px 0px 20px #f5bf5f); scale: 1; }
+    50% { filter: drop-shadow(0px 0px 44px #f5bf5f) drop-shadow(0px 0px 14px #f5bf5f); scale: 1.09; }
+  }
+
   /* The event card grows out of the deck (bottom left of the popup) into place. */
   --animate-draw-card: draw-card 550ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
   @keyframes draw-card {
     from { opacity: 0; translate: -183px 290px; scale: 0.3; rotate: -20deg; }
     to { opacity: 1; translate: 0 0; scale: 1; rotate: 0deg; }
+  }
+
+  /* A piece falling into place on the table: it starts a little above its
+     spot and a little bigger (closer to you, as if held over the table),
+     drops, sinks a hair past its spot and springs back. Pieces use it one
+     after another (see components/dropIn.ts).
+     The whole trip is one smooth curve: just a start and an end, with a
+     spring timing (`linear(...)` lists points on the way; above 1 means
+     "a little past the spot"). Several keyframes with an easing each would
+     make the piece slow down and speed up again at every keyframe. */
+  --animate-drop-in: drop-in 760ms linear(0, 0.22 8%, 0.56 18%, 0.86 29%, 1.03 40%, 1.075 49%, 1.06 58%, 1.015 70%, 0.995 82%, 1) backwards;
+  @keyframes drop-in {
+    from { opacity: 0; translate: 0 -36px; scale: 1.08; }
+    to { opacity: 1; translate: 0 0; scale: 1; }
   }
 
   /* A popup appearing: a quick fade and small rise. */

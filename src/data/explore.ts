@@ -44,3 +44,17 @@ export const STAR_PHOTOS: Record<MapStarId, { photo: string; caption: string }> 
     caption: 'The lake is beautiful from every angle, beloved by all from boaters, runners, kayakers, strollers, and birds.',
   },
 }
+
+/**
+ * Explore mode's token guide (desktop, bottom right): what each kind of token
+ * stands for. In the game's token order: social, economic, political.
+ */
+export const TOKEN_GUIDE = {
+  title: 'tokens',
+  types: [
+    { type: 'social', name: 'Social', meaning: 'People power from volunteers, neighbors and turnout.' },
+    { type: 'economic', name: 'Economic', meaning: 'Money from fundraising, grants and budgets.' },
+    { type: 'political', name: 'Political', meaning: 'Influence that gets the city to act.' },
+  ],
+  footer: 'Options cost tokens. Everyone’s tokens refill every five rounds.',
+} as const

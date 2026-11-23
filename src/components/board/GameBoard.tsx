@@ -5,6 +5,7 @@ import { TOKEN_ORDER, TOTAL_ROUNDS, TRACKER, pointsToStars, type CharacterId, ty
 import { BAR_HEIGHT, BAR_WIDTH, PADDING, ROW_GAP, ROW_HEIGHT, SLOT_WIDTH, STAR, TRACKER_BOX } from './trackerLayout'
 import { METRIC_ROWS, hasCityBank, remaining, startingTokens, type Metrics, type Player, type Spent } from '../../game/state'
 import { CharacterToken } from '../CharacterToken'
+import { DROP_STEP, dropIn } from '../dropIn'
 import { MiniPostcard } from '../MiniPostcard'
 import { PlayerBadge } from '../PlayerBadge'
 import { Star } from '../Star'
@@ -23,9 +24,9 @@ const lift = (raised?: boolean) => (raised ? 'z-20' : '')
 type Box = { left: number; top: number; width: number; height: number }
 
 /** A rotated object: `box` is its upright bounding box, `children` the object at its real size. */
-function Tilted({ box, rotate, children, className = '' }: { box: Box; rotate: number; children: ReactNode; className?: string }) {
+function Tilted({ box, rotate, children, className = '', style }: { box: Box; rotate: number; children: ReactNode; className?: string; style?: CSSProperties }) {
   return (
-    <div className={`absolute flex items-center justify-center ${className}`} style={box}>
+    <div className={`absolute flex items-center justify-center ${className}`} style={{ ...box, ...style }}>
       <div className="flex-none" style={{ rotate: `${rotate}deg` }}>
         {children}
       </div>
@@ -44,22 +45,24 @@ function Tilted({ box, rotate, children, className = '' }: { box: Box; rotate: n
 export function Board({ onStar }: { onStar?: (id: MapStarId) => void } = {}) {
   return (
     <>
-      <Tilted box={{ left: 167.89, top: 30.15, width: 911.497, height: 911.497 }} rotate={-6.76}>
+      {/* The board and map fall onto the table together (dropIn), first of everything */}
+      <Tilted box={{ left: 167.89, top: 30.15, width: 911.497, height: 911.497 }} rotate={-6.76} {...dropIn(0)}>
         <div className="bg-board size-[820.63px] border-[2.5px] border-ink-soft shadow-[-10px_10px_8px_0px_rgba(0,0,0,0.25)]" />
       </Tilted>
-      <Tilted box={{ left: 177.81, top: 40.07, width: 891.655, height: 891.655 }} rotate={-6.76}>
+      <Tilted box={{ left: 177.81, top: 40.07, width: 891.655, height: 891.655 }} rotate={-6.76} {...dropIn(0)}>
         <img alt="" src={`${B}/map.png`} width={802.766} height={802.766} className="block size-[802.766px] max-w-none" draggable={false} />
       </Tilted>
       {/* The SVGs include a drop shadow, so they're a little bigger than the star itself. */}
       {onStar &&
-        MAP_STARS.map((s) => (
+        MAP_STARS.map((s, i) => (
           <button
             key={s.id}
             type="button"
             onClick={() => onStar(s.id)}
             aria-label={`Photo of ${s.name}`}
-            className={`absolute z-20 h-[46px] ${s.kind === 'a' ? 'w-[45px]' : 'w-[46px]'} animate-pop-in cursor-pointer rounded-full transition-[translate,filter] duration-200 hover:-translate-y-1.5 hover:drop-shadow-[-2px_6px_4px_rgba(0,0,0,0.25)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:animate-none motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
-            style={{ left: s.left, top: s.top }}
+            // Each star falls into place in turn when explore mode opens
+            className={`absolute z-20 h-[46px] ${s.kind === 'a' ? 'w-[45px]' : 'w-[46px]'} animate-drop-in cursor-pointer rounded-full transition-[translate,filter] duration-200 hover:-translate-y-1.5 hover:drop-shadow-[-2px_6px_4px_rgba(0,0,0,0.25)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:animate-none motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
+            style={{ left: s.left, top: s.top, animationDelay: `${(2 + i) * DROP_STEP}ms` }}
           >
             <div className={`absolute ${s.kind === 'a' ? 'inset-[4.36%_-2.54%_-4.78%_-2.54%]' : 'inset-[4.23%_-2.33%_-4.84%_-2.33%]'}`}>
               <img alt="" src={`${B}/star-${s.kind}.svg`} className="block size-full max-w-none" draggable={false} />
@@ -78,14 +81,15 @@ export function Board({ onStar }: { onStar?: (id: MapStarId) => void } = {}) {
  * `onDraw` it's a button; `glow` adds the golden halo (hover, or the
  * tutorial's "click this" cue).
  */
-export function EventDeck({ onDraw, glow, raised }: { onDraw?: () => void; glow?: boolean; raised?: boolean }) {
+export function EventDeck({ onDraw, glow, raised, bigGlow }: { onDraw?: () => void; glow?: boolean; raised?: boolean; /** A stronger glow, for the shrunk phone map */ bigGlow?: boolean }) {
   const card = (
     <div className="h-[211.907px] w-[131.878px]">
       <MiniPostcard textClass="text-[16px]" />
     </div>
   )
   return (
-    <Tilted box={{ left: 415.37, top: 505, width: 243.724, height: 194.902 }} rotate={70.55} className={lift(raised)}>
+    // Lands together with the board it lies on
+    <Tilted box={{ left: 415.37, top: 505, width: 243.724, height: 194.902 }} rotate={70.55} {...dropIn(0, undefined, lift(raised))}>
       {onDraw ? (
         <button
           type="button"
@@ -100,7 +104,8 @@ export function EventDeck({ onDraw, glow, raised }: { onDraw?: () => void; glow?
           {card}
         </button>
       ) : (
-        card
+        // Not a button (the phone puts a bigger one over it), but it can still glow
+        <div className={glow ? `rounded-[8px] ${bigGlow ? 'animate-glow-big drop-shadow-[0px_0px_20px_#f5bf5f]' : 'animate-glow drop-shadow-[0px_0px_12.4px_#f5bf5f]'} motion-reduce:animate-none` : ''}>{card}</div>
       )}
     </Tilted>
   )
@@ -111,7 +116,7 @@ export function EventDeck({ onDraw, glow, raised }: { onDraw?: () => void; glow?
 
 export function RoundCounter({ roundsUntilReset, raised }: { roundsUntilReset: number; raised?: boolean }) {
   return (
-    <div className={`absolute top-[40.07px] left-[1175.93px] h-[35.833px] w-[222.951px] rounded-[5px] border border-black bg-cream ${lift(raised)}`}>
+    <div {...dropIn(4, undefined, `absolute top-[40.07px] left-[1175.93px] h-[35.833px] w-[222.951px] rounded-[5px] border border-black bg-cream ${lift(raised)}`)}>
       <p className="absolute top-[12.42px] left-[12.97px] font-mono text-[12px] leading-[0.94] whitespace-nowrap text-ink-soft">
         Rounds until token reset: {roundsUntilReset}
       </p>
@@ -127,7 +132,7 @@ export function RoundCounter({ roundsUntilReset, raised }: { roundsUntilReset: n
 export function TotalRounds({ round, raised }: { round: number; raised?: boolean }) {
   const done = round > TOTAL_ROUNDS
   return (
-    <div className={`absolute top-[39.91px] left-[41.13px] flex h-[36px] items-center rounded-[5px] border border-black bg-cream px-[12px] ${lift(raised)}`}>
+    <div {...dropIn(3, undefined, `absolute top-[39.91px] left-[41.13px] flex h-[36px] items-center rounded-[5px] border border-black bg-cream px-[12px] ${lift(raised)}`)}>
       <p className="font-mono text-[12px] leading-[0.94] whitespace-nowrap text-ink-soft">
         {done ? `All ${TOTAL_ROUNDS} rounds played` : `Round ${round} of ${TOTAL_ROUNDS}`}
       </p>
@@ -211,7 +216,8 @@ export function ScoreTrackerCard({ metrics, className = '', style }: { metrics: 
 
 /** The score tracker at its spot on the board (top right). */
 export function ScoreTracker({ metrics, raised }: { metrics: Metrics; raised?: boolean }) {
-  return <ScoreTrackerCard metrics={metrics} className={`absolute ${lift(raised)}`} style={{ left: TRACKER_BOX.left, top: TRACKER_BOX.top }} />
+  const fall = dropIn(5)
+  return <ScoreTrackerCard metrics={metrics} className={`absolute ${lift(raised)} ${fall.className}`} style={{ left: TRACKER_BOX.left, top: TRACKER_BOX.top, ...fall.style }} />
 }
 
 // ---------------------------------------------------------------------------
@@ -281,7 +287,8 @@ export function PlayerRoster({ players, spent, raised, onCharacter, onCityBank }
   // Room for the tokens between their left edge and the column's right edge
   const perRow = Math.floor((COLUMN_LEFT + COLUMN_WIDTH - TOKENS_LEFT + TOKEN_GAP) / (TOKEN + TOKEN_GAP))
   return (
-    <div className={`absolute inset-0 pointer-events-none ${lift(raised)}`} aria-label="Players">
+    // Falls into place with the column (its middle: the column's middle)
+    <div {...dropIn(6, { x: COLUMN_LEFT + COLUMN_WIDTH / 2, y: 420 }, `absolute inset-0 pointer-events-none ${lift(raised)}`)} aria-label="Players">
       {players.map((p, i) => {
         const top = ROSTER_TOP + i * ROSTER_ROW
         return (

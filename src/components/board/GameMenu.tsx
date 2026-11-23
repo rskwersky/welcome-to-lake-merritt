@@ -2,9 +2,10 @@ import { useState, type CSSProperties } from 'react'
 import { ManualArt } from './ManualArt'
 
 // Figma's `manual-button` + `menu` (bottom left of the board).
-// A little "MENU" booklet. Hover it (or focus it, or tap it) and three
+// A little "MENU" booklet. Hover it (or focus it, or tap it) and the
 // `menu-button`s fan out of it, like cards spread from a hand:
-//   new game · learn more · explore mode (or "play mode" while exploring)
+//   new game · how to play · learn more · (feedback) · explore mode
+//   ("play mode" while exploring)
 // The menu stays open while the mouse is anywhere over the booklet or the
 // buttons (they share one hover area), and closes when it leaves.
 
@@ -15,28 +16,35 @@ type GameMenuProps = {
   onToggleMode: () => void
   /** "feedback": shown only when the feedback form is available */
   onFeedback?: () => void
+  /** "how to play": opens the manual's rule pages */
+  onHowToPlay: () => void
 }
 
 const A = '/assets/overview'
 
-// Each button's resting tilt once fanned out, top to bottom. They spread
-// from the booklet's corner, so the one farthest away tilts the most.
-// (Top to bottom; with 3 buttons the top one is skipped.)
-const FAN = [-8, -6, -3.5, -1]
+// Each button's resting tilt once fanned out, top to bottom: a gentle fan,
+// a little more for the ones farther from the booklet. Each turns around its
+// own middle, so the gaps between them stay even.
+// (Top to bottom; with 4 buttons the top one is skipped.)
+const FAN = [-4, -3, -2, -1, 0]
 // The booklet is drawn twice Figma's size (Figma's 69 × 87 was too small to
 // read as a menu): scaled 2× from its bottom-left corner, which moves from
-// Figma's (41, 975) to (24, 1000).
-const BOOKLET = { scale: 2, from: { x: 41.13, y: 975.3 }, to: { x: 24, y: 1000 }, width: 139, height: 174 }
+// Figma's (41, 975) to (24, 860), up off the bottom edge to leave the
+// bottom of the screen to explore mode's places.
+const BOOKLET = { scale: 2, from: { x: 41.13, y: 975.3 }, to: { x: 24, y: 860 }, width: 139, height: 174 }
 
-// Buttons: 46 tall, 12 apart, 28 above the booklet.
-const STEP = 46 + 12
-const GAP_ABOVE_BOOKLET = 28
+// Buttons: 40 tall, 10 apart, 18 above the booklet.
+const BUTTON_HEIGHT = 40
+const STEP = BUTTON_HEIGHT + 10
+const GAP_ABOVE_BOOKLET = 18
 // How far each button travels: from the middle of the booklet to its spot.
 // `fromBottom`: 0 for the button just above the booklet, 1 for the next…
-const travel = (fromBottom: number) => fromBottom * STEP + 46 / 2 + GAP_ABOVE_BOOKLET + BOOKLET.height / 2
+// Where the shared hover area starts: room for five buttons above the booklet
+const MENU_TOP = BOOKLET.to.y - BOOKLET.height - GAP_ABOVE_BOOKLET - 5 * STEP - 8
+const travel = (fromBottom: number) => fromBottom * STEP + BUTTON_HEIGHT / 2 + GAP_ABOVE_BOOKLET + BOOKLET.height / 2
 
 const BUTTON =
-  'h-[46px] w-[190px] origin-bottom-left cursor-pointer rounded-[9px] border-[1.5px] border-ink bg-cream font-mono text-[20px] text-ink-soft drop-shadow-[0px_3px_2px_rgba(0,0,0,0.2)] hover:bg-peach focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink'
+  'h-[40px] w-[164px] cursor-pointer rounded-[8px] border-[1.25px] border-ink bg-cream font-mono text-[17px] text-ink-soft drop-shadow-[0px_3px_2px_rgba(0,0,0,0.2)] hover:bg-peach focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink'
 
 // Closed: shrunk, tilted back and tucked into the booklet, invisible.
 // Open: at its spot with its fan tilt. The transform reads the per-button
@@ -46,15 +54,16 @@ const OPEN = '[transform:rotate(var(--tilt))] opacity-100 pointer-events-auto'
 const OPEN_ON_HOVER =
   'group-hover/menu:[transform:rotate(var(--tilt))] group-hover/menu:opacity-100 group-hover/menu:pointer-events-auto group-focus-within/menu:[transform:rotate(var(--tilt))] group-focus-within/menu:opacity-100 group-focus-within/menu:pointer-events-auto'
 
-export function GameMenu({ mode, onNewGame, onLearnMore, onToggleMode, onFeedback }: GameMenuProps) {
+export function GameMenu({ mode, onNewGame, onLearnMore, onToggleMode, onFeedback, onHowToPlay }: GameMenuProps) {
   // Opened by tapping (touch screens have no hover); hover and focus open it too.
   const [open, setOpen] = useState(false)
   const items = [
     { label: 'new game', onClick: onNewGame },
+    { label: 'how to play', onClick: onHowToPlay },
     { label: 'learn more', onClick: onLearnMore },
     { label: mode === 'play' ? 'explore mode' : 'play mode', onClick: onToggleMode },
   ]
-  if (onFeedback) items.splice(2, 0, { label: 'feedback', onClick: onFeedback })
+  if (onFeedback) items.splice(3, 0, { label: 'feedback', onClick: onFeedback })
 
   return (
     <>
@@ -72,10 +81,11 @@ export function GameMenu({ mode, onNewGame, onLearnMore, onToggleMode, onFeedbac
       {/* One hover area covering the buttons and the booklet */}
       <div
         className="group/menu absolute flex w-[200px] flex-col justify-end"
-        style={{ left: BOOKLET.to.x - 3, top: 570, height: BOOKLET.to.y - 570 }}
+        // Tall enough for five buttons above the booklet
+        style={{ left: BOOKLET.to.x - 3, top: MENU_TOP, height: BOOKLET.to.y - MENU_TOP }}
         onMouseLeave={() => setOpen(false)}
       >
-        <div className="flex flex-col gap-[12px] pl-[3px]" role="menu" aria-label="Game menu">
+        <div className="flex flex-col gap-[10px] pl-[3px]" role="menu" aria-label="Game menu">
           {items.map((item, i) => (
             <button
               key={item.label}

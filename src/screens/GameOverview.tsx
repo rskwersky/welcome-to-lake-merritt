@@ -4,6 +4,7 @@ import { MiniCharacterCard } from '../components/CardFrame'
 import { ManualArt } from '../components/board/ManualArt'
 import { MiniPostcard } from '../components/MiniPostcard'
 import { PhoneStage } from '../components/phone/PhoneStage'
+import { dropIn } from '../components/dropIn'
 import { Stage } from '../components/Stage'
 import { usePhoneLayout } from '../hooks/usePhoneLayout'
 import type { CharacterId } from '../data/gameRules'
@@ -37,12 +38,16 @@ const A = '/assets/overview'
  * (pointer-events: none); only the object inside it reacts. A parent still
  * counts as "hovered" when the mouse is over one of its children.
  */
-function Lift({ children, label }: { children: ReactNode; label: string }) {
+function Lift({ children, label, drop }: { children: ReactNode; label: string; drop?: { order: number; origin: { x: number; y: number } } }) {
+  // `drop`: this piece falls into place when the screen appears (its turn,
+  // and its middle point, since this layer covers the whole stage)
+  const fall = drop ? dropIn(drop.order, drop.origin) : null
   return (
     <div
       aria-label={label}
       role="img"
-      className="pointer-events-none absolute inset-0 transition-[translate,filter] duration-200 ease-out hover:-translate-y-1.5 hover:drop-shadow-[-3px_8px_6px_rgba(0,0,0,0.18)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 [&>*]:pointer-events-auto"
+      className={`pointer-events-none absolute inset-0 transition-[translate,filter] duration-200 ease-out hover:-translate-y-1.5 hover:drop-shadow-[-3px_8px_6px_rgba(0,0,0,0.18)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 [&>*]:pointer-events-auto ${fall?.className ?? ''}`}
+      style={fall?.style}
     >
       {children}
     </div>
@@ -224,48 +229,52 @@ export function GameOverview({ onPlay }: GameOverviewProps) {
   if (phone) return <GameOverviewPhone onPlay={onPlay} />
   return (
     <Stage className="bg-overview">
-      {/* Objects are listed bottom to top, in Figma's layer order. */}
-      <Board />
-      <Lift label="The 'greetings from Lake Merritt' game card">
+      {/* Objects are listed bottom to top, in Figma's layer order. They fall
+          onto the table in that order too (`drop`: their turn and middle),
+          except the event card and the deck, which land with the board. */}
+      <div {...dropIn(0, { x: 720, y: 471 }, 'absolute inset-0')}>
+        <Board />
+      </div>
+      <Lift label="The 'greetings from Lake Merritt' game card" drop={{ order: 0, origin: { x: 637, y: 580 } }}>
         <GameCard />
       </Lift>
 
-      <Lift label="The Protector card">
+      <Lift label="The Protector card" drop={{ order: 3, origin: { x: 97.65, y: 585.48 } }}>
         <Protector />
       </Lift>
-      <Lift label="The Citizen card">
+      <Lift label="The Citizen card" drop={{ order: 4, origin: { x: 124.3, y: 749.4 } }}>
         <Citizen />
       </Lift>
-      <Lift label="The Environmentalist card">
+      <Lift label="The Environmentalist card" drop={{ order: 5, origin: { x: 272.65, y: 804.28 } }}>
         <Environmentalist />
       </Lift>
-      <Lift label="The Organizer card">
+      <Lift label="The Organizer card" drop={{ order: 6, origin: { x: 255.95, y: 634.45 } }}>
         <Organizer />
       </Lift>
-      <Lift label="A political token">
+      <Lift label="A political token" drop={{ order: 11, origin: { x: 1217.8, y: 829.1 } }}>
         <LooseToken kind="political" box={{ left: 1187.99, top: 799.78, width: 59.665, height: 58.691 }} />
       </Lift>
-      <Lift label="A social token">
+      <Lift label="A social token" drop={{ order: 12, origin: { x: 1273.5, y: 757.3 } }}>
         <LooseToken kind="social" box={{ left: 1243.68, top: 728.08, width: 59.667, height: 58.421 }} />
       </Lift>
-      <Lift label="An economic token">
+      <Lift label="An economic token" drop={{ order: 13, origin: { x: 1299.3, y: 846.7 } }}>
         <LooseToken kind="economic" box={{ left: 1266.56, top: 816.58, width: 65.47, height: 60.286 }} />
       </Lift>
-      <Lift label="The Educator card">
+      <Lift label="The Educator card" drop={{ order: 7, origin: { x: 223.46, y: 466.47 } }}>
         <Educator />
       </Lift>
-      <Lift label="The Recreationist card">
+      <Lift label="The Recreationist card" drop={{ order: 8, origin: { x: 87.69, y: 380.22 } }}>
         <Recreationist />
       </Lift>
-      <Lift label="The game manual">
+      <Lift label="The game manual" drop={{ order: 9, origin: { x: 1245, y: 256 } }}>
         <ManualArt />
       </Lift>
-      <Lift label="The 'Graffiti at the Boathouse' event card">
+      <Lift label="The 'Graffiti at the Boathouse' event card" drop={{ order: 0, origin: { x: 1247, y: 552 } }}>
         <EventCard />
       </Lift>
 
       {/* Figma: 235×61, centered, 919px from the top */}
-      <div className="absolute inset-x-0 top-[919px] flex justify-center">
+      <div {...dropIn(15, undefined, 'absolute inset-x-0 top-[919px] flex justify-center')}>
         <Button onClick={onPlay}>play game</Button>
       </div>
     </Stage>
@@ -299,38 +308,75 @@ function PhoneTableCard({ id, center, rotate }: { id: CharacterId; center: { x: 
   )
 }
 
+const PHONE_CARDS: { id: CharacterId; center: { x: number; y: number }; rotate: number }[] = [
+  { id: 'recreationist', center: { x: 52, y: 239.2 }, rotate: -0.36 },
+  { id: 'environmentalist', center: { x: 124.7, y: 222.7 }, rotate: -4.82 },
+  { id: 'educator', center: { x: 199.3, y: 202.6 }, rotate: -3.2 },
+  { id: 'protector', center: { x: 59.1, y: 577.4 }, rotate: 7.61 },
+  { id: 'organizer', center: { x: 137.2, y: 586 }, rotate: 2 },
+  { id: 'citizen', center: { x: 210.5, y: 593.7 }, rotate: 0 },
+]
+
+/** A full-screen layer that makes the piece inside fall into place: its turn, and its middle (x, y). */
+function Drop({ order, x, y, children }: { order: number; x: number; y: number; children: ReactNode }) {
+  const fall = dropIn(order, { x, y })
+  return (
+    <div className={`pointer-events-none absolute inset-0 ${fall.className}`} style={fall.style}>
+      {children}
+    </div>
+  )
+}
+
 function GameOverviewPhone({ onPlay }: GameOverviewProps) {
   return (
     <PhoneStage>
       {/* Scrolls on screens shorter than Figma's 844px */}
       <div className="absolute inset-0 overflow-x-hidden overflow-y-auto">
         <div className="relative h-[844px] w-full" role="img" aria-label="The game laid out on a table: the board, the six character cards, the manual and tokens">
-          {/* The board and the game card on it: a stage-sized layer, shrunk
-              and moved so the board's box lands at Figma's spot */}
-          <div
-            className="pointer-events-none absolute top-0 left-0 h-[1024px] w-[1440px] origin-top-left"
-            style={{ transform: `translate(${PHONE_BOARD.left}px, ${PHONE_BOARD.top}px) scale(${PHONE_BOARD.scale}) translate(-311.81px, -62.87px)` }}
-          >
-            <Board />
-            <GameCard />
-          </div>
+          {/* Each piece falls into place in turn (dropIn: its turn and its
+              middle, since each layer covers the whole screen) */}
+          <Drop order={0} x={195} y={396.6}>
+            {/* The board: a stage-sized layer, shrunk and moved so the
+                board's box lands at Figma's spot */}
+            <div
+              className="pointer-events-none absolute top-0 left-0 h-[1024px] w-[1440px] origin-top-left"
+              style={{ transform: `translate(${PHONE_BOARD.left}px, ${PHONE_BOARD.top}px) scale(${PHONE_BOARD.scale}) translate(-311.81px, -62.87px)` }}
+            >
+              <Board />
+            </div>
+          </Drop>
+          <Drop order={0} x={157.7} y={445.9}>
+            <div
+              className="pointer-events-none absolute top-0 left-0 h-[1024px] w-[1440px] origin-top-left"
+              style={{ transform: `translate(${PHONE_BOARD.left}px, ${PHONE_BOARD.top}px) scale(${PHONE_BOARD.scale}) translate(-311.81px, -62.87px)` }}
+            >
+              <GameCard />
+            </div>
+          </Drop>
           {/* The manual, top right (71% of its overview size) */}
-          <div className="pointer-events-none absolute top-0 left-0 h-[1024px] w-[1440px]">
-            <ManualArt at={{ left: 245.5, top: 109.3 }} scale={0.71} />
-          </div>
-          <LooseToken kind="social" box={{ left: 323.5, top: 508.5, width: 29.3, height: 28.7 }} />
-          <LooseToken kind="political" box={{ left: 296.2, top: 543.7, width: 29.3, height: 28.9 }} />
-          <LooseToken kind="economic" box={{ left: 334.8, top: 552, width: 32.2, height: 29.6 }} />
+          <Drop order={9} x={313} y={187.6}>
+            <div className="pointer-events-none absolute top-0 left-0 h-[1024px] w-[1440px]">
+              <ManualArt at={{ left: 245.5, top: 109.3 }} scale={0.71} />
+            </div>
+          </Drop>
+          <Drop order={10} x={338} y={523}>
+            <LooseToken kind="social" box={{ left: 323.5, top: 508.5, width: 29.3, height: 28.7 }} />
+          </Drop>
+          <Drop order={11} x={311} y={558}>
+            <LooseToken kind="political" box={{ left: 296.2, top: 543.7, width: 29.3, height: 28.9 }} />
+          </Drop>
+          <Drop order={12} x={351} y={567}>
+            <LooseToken kind="economic" box={{ left: 334.8, top: 552, width: 32.2, height: 29.6 }} />
+          </Drop>
           {/* Three cards above the board, three below */}
-          <PhoneTableCard id="recreationist" center={{ x: 52, y: 239.2 }} rotate={-0.36} />
-          <PhoneTableCard id="environmentalist" center={{ x: 124.7, y: 222.7 }} rotate={-4.82} />
-          <PhoneTableCard id="educator" center={{ x: 199.3, y: 202.6 }} rotate={-3.2} />
-          <PhoneTableCard id="protector" center={{ x: 59.1, y: 577.4 }} rotate={7.61} />
-          <PhoneTableCard id="organizer" center={{ x: 137.2, y: 586 }} rotate={2} />
-          <PhoneTableCard id="citizen" center={{ x: 210.5, y: 593.7 }} rotate={0} />
+          {PHONE_CARDS.map((card, i) => (
+            <Drop key={card.id} order={3 + i} x={card.center.x} y={card.center.y}>
+              <PhoneTableCard {...card} />
+            </Drop>
+          ))}
         </div>
         {/* Figma: 211.5 × 54.9 at y 750, the large button at 90% */}
-        <div className="absolute inset-x-0 top-[750px] flex justify-center">
+        <div {...dropIn(14, undefined, 'absolute inset-x-0 top-[750px] flex justify-center')}>
           <div style={{ zoom: 211.5 / 235 }}>
             <Button onClick={onPlay}>play game</Button>
           </div>

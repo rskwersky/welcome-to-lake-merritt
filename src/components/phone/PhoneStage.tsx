@@ -27,10 +27,11 @@ function useFrame() {
   return frame
 }
 
-export function PhoneStage({ children }: { children: ReactNode }) {
+/** `className`: the background (default: the overview's warm gradient) */
+export function PhoneStage({ children, className = 'bg-overview' }: { children: ReactNode; className?: string }) {
   const { scale, height } = useFrame()
   return (
-    <div className="bg-overview flex h-full w-full justify-center overflow-clip">
+    <div className={`flex h-full w-full justify-center overflow-clip ${className}`}>
       <div style={{ width: WIDTH * scale, height: height * scale }}>
         {/* data-stage + data-width: the flying stars measure positions in
             this frame (components/popups/flights.ts) */}

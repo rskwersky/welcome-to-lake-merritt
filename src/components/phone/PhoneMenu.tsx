@@ -11,6 +11,8 @@ import { MenuBooklet } from '../board/GameMenu'
 
 type PhoneMenuProps = {
   items: { label: string; onClick: () => void }[]
+  /** During a round's popups: the booklet can't be opened (it's dimmed with the board) */
+  disabled?: boolean
 }
 
 const BOOKLET = { width: 48.6, height: 61.1 }
@@ -31,7 +33,7 @@ export function BookletPicture() {
   )
 }
 
-export function PhoneMenu({ items }: PhoneMenuProps) {
+export function PhoneMenu({ items, disabled = false }: PhoneMenuProps) {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -42,7 +44,9 @@ export function PhoneMenu({ items }: PhoneMenuProps) {
   }, [open])
 
   return (
-    <div className="relative z-30 shrink-0" style={BOOKLET}>
+    // Lifted above everything only while open; otherwise it sits under the
+    // round's dim layer like the rest of the board
+    <div className={`relative shrink-0 ${open ? 'z-40' : ''}`} style={BOOKLET}>
       {open && (
         // The dimmed screen; tap it to close. (`fixed` inside the scaled
         // phone frame covers the frame; it reaches far past it for tablets.)
@@ -52,9 +56,10 @@ export function PhoneMenu({ items }: PhoneMenuProps) {
         type="button"
         aria-label="Menu"
         aria-expanded={open}
+        disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         // Above the dim, so it stays bright and can close the menu again
-        className="relative block size-full cursor-pointer rounded-[3px] transition-[translate] duration-200 hover:-translate-y-1 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+        className="relative block size-full cursor-pointer rounded-[3px] transition-[translate] duration-200 enabled:hover:-translate-y-1 disabled:cursor-default focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
         <BookletPicture />
       </button>

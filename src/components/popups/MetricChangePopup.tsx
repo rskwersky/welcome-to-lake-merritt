@@ -79,22 +79,39 @@ export type Flight = {
 }
 
 /**
+ * How each part of a star's trip moves over time. `linear(...)` lists
+ * points along the way (how far along, at what % of the time), so the
+ * curve can wiggle like a spring: a value above 1 means "a little past the
+ * target", and the next point pulls it back.
+ *   x      darts sideways fast, overshoots a touch, settles
+ *   y      a tiny hop the other way first (a wind-up), then speeds up into
+ *          the slot, overshoots and settles: with x, an arc with a bounce
+ *   scale  swells a little as it lifts off, then shrinks to tracker size,
+ *          dips just under it and springs back: the "pop" of landing
+ */
+const SPRING = {
+  x: 'linear(0, 0.38 14%, 0.82 32%, 1.05 52%, 0.99 72%, 1)',
+  y: 'linear(0, -0.05 12%, 0.12 28%, 0.55 48%, 1.07 70%, 0.98 86%, 1)',
+  scale: 'linear(0, -0.15 16%, 0.55 46%, 1.07 74%, 0.99 88%, 1)',
+}
+
+/**
  * Stars travelling from the popup to the score tracker. Each star starts
  * where its popup star was, then (one frame later, so the browser has drawn
  * the starting spot) glides to its tracker slot, shrinking as it goes.
  * All positions are frame px: the desktop stage or the phone frame
  * (see flights.ts).
  *
- * To make the path a gentle curve instead of a straight line, the move is
- * split across two layers: the outer layer moves sideways and slows down
- * at the end (ease-out), the inner one moves up/down and speeds up
- * (ease-in). Together they trace an arc, like something tossed.
+ * To make the path a curve instead of a straight line, the move is split
+ * across two layers with different timing (SPRING, above): the outer layer
+ * moves sideways quickly, the inner one moves up/down later. Together they
+ * trace an arc, like something tossed, and both settle with a little bounce.
  * The stars leave one after another, STAGGER ms apart.
  */
 export function FlyingStars({ flights, onLanded }: { flights: Flight[]; onLanded: () => void }) {
   const [launched, setLaunched] = useState(false)
-  const DURATION = 850
-  const STAGGER = 110
+  const DURATION = 620
+  const STAGGER = 55
   // The round moves on exactly once, when the last star has arrived.
   const landed = useRef(false)
   const land = () => {
@@ -130,18 +147,19 @@ export function FlyingStars({ flights, onLanded }: { flights: Flight[]; onLanded
         return (
           <div
             key={i}
-            className="absolute transition-[translate] ease-[cubic-bezier(0.25,0.6,0.35,1)]"
+            className="absolute transition-[translate]"
             // `from` and `to` are the centers of the star; it shrinks around its center.
             style={{
               left: f.from.x - (f.half ? width / 4 : width / 2),
               top: f.from.y - (width * STAR_ASPECT) / 2,
               translate: launched ? `${f.to.x - f.from.x}px 0` : '0 0',
+              transitionTimingFunction: SPRING.x,
               ...timing,
             }}
           >
             <div
-              className="transition-[translate,scale] ease-[cubic-bezier(0.55,0,0.75,0.6)]"
-              style={{ translate: launched ? `0 ${f.to.y - f.from.y}px` : '0 0', scale: launched ? f.toWidth / width : 1, ...timing }}
+              className="transition-[translate,scale]"
+              style={{ translate: launched ? `0 ${f.to.y - f.from.y}px` : '0 0', scale: launched ? f.toWidth / width : 1, transitionTimingFunction: `${SPRING.y}, ${SPRING.scale}`, ...timing }}
               // The last star to leave is the last to arrive: when it has
               // finished moving, the stars are all in place. (Measuring the
               // end instead of guessing it with a timer means no star is

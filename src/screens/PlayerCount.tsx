@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Button } from '../components/Button'
+import { PhoneStage } from '../components/phone/PhoneStage'
 import { Stage } from '../components/Stage'
+import { usePhoneLayout } from '../hooks/usePhoneLayout'
 import { MAX_PLAYERS, MIN_PLAYERS } from '../data/gameRules'
 
 // Figma screens "06 player count / default" and "06 player count / selected".
@@ -20,6 +22,8 @@ type PlayerCountProps = {
 
 export function PlayerCount({ initialCount, onContinue }: PlayerCountProps) {
   const [count, setCount] = useState<number | null>(initialCount ?? null)
+  const phone = usePhoneLayout()
+  if (phone) return <PlayerCountPhone count={count} setCount={setCount} onContinue={onContinue} />
 
   return (
     <Stage className="bg-sky">
@@ -71,5 +75,57 @@ export function PlayerCount({ initialCount, onContinue }: PlayerCountProps) {
         </div>
       </div>
     </Stage>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// The phone version: the postcard stands upright (its picture is portrait
+// already; desktop turns it on its side), with bigger number buttons
+// (72px, easy to tap) and continue underneath.
+
+type PlayerCountPhoneProps = {
+  count: number | null
+  setCount: (n: number) => void
+  onContinue: (count: number) => void
+}
+
+function PlayerCountPhone({ count, setCount, onContinue }: PlayerCountPhoneProps) {
+  return (
+    <PhoneStage className="bg-sky">
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-[32px] overflow-y-auto py-[24px]">
+        <div className="relative h-[484px] w-[300px] shrink-0 drop-shadow-[0_4px_2px_rgba(0,0,0,0.25)]">
+          <img alt="" src="/assets/player-count-card.svg" className="absolute inset-0 size-full" draggable={false} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-[34px]">
+            <h1 id="player-count-title" className="font-script text-[34px] leading-none whitespace-nowrap text-ink">
+              How many players?
+            </h1>
+            <div role="group" aria-labelledby="player-count-title" className="grid grid-cols-3 gap-[14px]">
+              {COUNTS.map((n) => (
+                <Button
+                  key={n}
+                  aria-pressed={count === n}
+                  aria-label={`${n} ${n === 1 ? 'player' : 'players'}`}
+                  width={72}
+                  className="h-[72px]!"
+                  colorClass={count === n ? 'bg-peach' : 'bg-cream'}
+                  onClick={() => setCount(n)}
+                >
+                  {n}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* Kept in the layout while hidden, so nothing jumps when it appears */}
+        <div
+          className={`shrink-0 transition-opacity duration-300 motion-reduce:transition-none ${count ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+          aria-hidden={!count}
+        >
+          <Button width={201} tabIndex={count ? 0 : -1} onClick={() => count && onContinue(count)}>
+            continue
+          </Button>
+        </div>
+      </div>
+    </PhoneStage>
   )
 }

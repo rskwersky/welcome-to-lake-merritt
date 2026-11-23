@@ -5,7 +5,9 @@ import { TOKEN_ORDER, TOTAL_ROUNDS, type CharacterId, type Tokens, type TokenTyp
 import { hasCityBank, remaining, startingTokens, type Metrics, type Player, type Spent } from '../../game/state'
 import { Board, EventDeck, ScoreTrackerCard } from '../board/GameBoard'
 import { MiniCharacterCard } from '../CardFrame'
+import { PlacePostcard } from '../PlacePostcard'
 import { CharacterToken } from '../CharacterToken'
+import { DROP_STEP, dropIn } from '../dropIn'
 import { TokenIcon } from '../TokenIcon'
 
 // The parts of the phone game board (Figma "6b · mobile hi-fi", M1), top to
@@ -63,7 +65,8 @@ export function TopBar({ menu, children }: { menu: ReactNode; children: ReactNod
 /** The desktop tracker card, grown to Figma's 250px width. */
 export function PhoneTracker({ metrics }: { metrics: Metrics }) {
   // CSS `zoom` (unlike a transform) also grows the space the card takes up
-  return <ScoreTrackerCard metrics={metrics} style={{ zoom: 250 / 222.951 }} />
+  const fall = dropIn(3)
+  return <ScoreTrackerCard metrics={metrics} className={fall.className} style={{ zoom: 250 / 222.951, ...fall.style }} />
 }
 
 // The desktop board sits in a 911.5px square box at (167.89, 30.15) on the
@@ -92,10 +95,25 @@ type PhoneMapProps = {
 }
 
 /** The map and the event deck; in explore mode, the map stars too. */
+/** The board's tilt on the table (Board in GameBoard.tsx), which the phone undoes */
+const BOARD_TILT = -6.76
+/** The straight board (820.63px) grown to fill the box its tilted corners needed (911.5px) */
+const STRAIGHT_SCALE = MAP.stageBox.size / 820.63
+
+/** Where the deck's middle lands on the phone map (its desktop spot, shrunk) */
+const DECK_CENTER = { x: (415.37 + 243.724 / 2 - MAP.stageBox.left) * (MAP.size / MAP.stageBox.size), y: (505 + 194.902 / 2 - MAP.stageBox.top) * (MAP.size / MAP.stageBox.size) }
+/** The deck's tap area: much bigger than the little card (86 × 69), since it's the main thing to tap */
+const DECK_TAP = { width: 120, height: 100 }
+
 export function PhoneMap({ onDraw, glowDeck, raisedDeck, onStar, dimBoard }: PhoneMapProps) {
   const scale = MAP.size / MAP.stageBox.size
   return (
     <div className={`relative shrink-0 ${dimBoard ? 'z-20' : ''}`} style={{ width: MAP.size, height: MAP.size }}>
+      {/* On a phone the board sits straight, not tilted like on the table:
+          everything below is turned back by the board's tilt, and grown so
+          the straight board fills the square (it's smaller than the box
+          its tilted corners needed). The deck and stars turn with it. */}
+      <div className="absolute inset-0" style={{ rotate: `${-BOARD_TILT}deg`, scale: STRAIGHT_SCALE }}>
       <div className="absolute top-0 left-0 origin-top-left" style={{ transform: `scale(${scale}) translate(${-MAP.stageBox.left}px, ${-MAP.stageBox.top}px)` }}>
         <Board />
         {dimBoard && (
@@ -104,13 +122,23 @@ export function PhoneMap({ onDraw, glowDeck, raisedDeck, onStar, dimBoard }: Pho
             <div className="size-[820.63px] flex-none bg-ink-soft/50" style={{ rotate: '-6.76deg' }} />
           </div>
         )}
-        <EventDeck onDraw={onDraw} glow={glowDeck} raised={raisedDeck} />
+        {/* The deck's own button isn't used here: the bigger one below is */}
+        <EventDeck glow={glowDeck} bigGlow raised={raisedDeck} />
       </div>
+      {onDraw && (
+        <button
+          type="button"
+          onClick={onDraw}
+          aria-label="Draw an event card"
+          className={`absolute cursor-pointer rounded-[12px] focus-visible:outline-3 focus-visible:outline-ink ${raisedDeck ? 'z-30' : 'z-10'}`}
+          style={{ left: DECK_CENTER.x - DECK_TAP.width / 2, top: DECK_CENTER.y - DECK_TAP.height / 2, ...DECK_TAP }}
+        />
+      )}
       {/* The stars sit outside the shrunk layer, so they can be bigger than
           it would make them. Each is placed by its center on the desktop
           map (MAP_STARS), moved and shrunk the same way as the map. */}
       {onStar &&
-        MAP_STARS.map((star) => {
+        MAP_STARS.map((star, i) => {
           const x = (star.left + 23 - MAP.stageBox.left) * scale
           const y = (star.top + 23 - MAP.stageBox.top) * scale
           return (
@@ -119,19 +147,22 @@ export function PhoneMap({ onDraw, glowDeck, raisedDeck, onStar, dimBoard }: Pho
               type="button"
               onClick={() => onStar(star.id)}
               aria-label={`Photo of ${star.name}`}
-              className="group/star absolute z-10 flex animate-pop-in cursor-pointer items-center justify-center rounded-full focus-visible:outline-3 focus-visible:outline-ink motion-reduce:animate-none"
-              style={{ left: x - STAR_TAP / 2, top: y - STAR_TAP / 2, width: STAR_TAP, height: STAR_TAP }}
+              // Each star falls into place in turn when explore mode opens
+              className="group/star absolute z-10 flex animate-drop-in cursor-pointer items-center justify-center rounded-full focus-visible:outline-3 focus-visible:outline-ink motion-reduce:animate-none"
+              style={{ left: x - STAR_TAP / 2, top: y - STAR_TAP / 2, width: STAR_TAP, height: STAR_TAP, animationDelay: `${(1 + i) * DROP_STEP}ms` }}
             >
               <img
                 alt=""
                 src={`/assets/board/star-${star.kind}.svg`}
                 draggable={false}
                 className="block max-w-none transition-[translate,filter] duration-200 group-hover/star:-translate-y-1 group-hover/star:drop-shadow-[-1px_4px_3px_rgba(0,0,0,0.25)] motion-reduce:transition-none motion-reduce:group-hover/star:translate-y-0"
-                style={{ width: STAR_SIZE, height: STAR_SIZE }}
+                // Turned back upright (the map under them was turned straight)
+                style={{ width: STAR_SIZE, height: STAR_SIZE, rotate: `${BOARD_TILT}deg` }}
               />
             </button>
           )
         })}
+      </div>
     </div>
   )
 }
@@ -143,13 +174,15 @@ export function PhoneMap({ onDraw, glowDeck, raisedDeck, onStar, dimBoard }: Pho
 export function PhoneCharacterCards({ onOpen }: { onOpen: (id: CharacterId) => void }) {
   return (
     <div className="grid grid-cols-[repeat(3,107.61px)] gap-x-[17.5px] gap-y-[17px]">
-      {characters.map(({ id, name }) => (
+      {characters.map(({ id, name }, i) => (
         <button
           key={id}
           type="button"
           onClick={() => onOpen(id)}
           aria-label={`Open ${name}’s card`}
-          className="relative h-[138.49px] w-[107.61px] cursor-pointer rounded-[6px] shadow-[-3px_3px_2px_0px_rgba(0,0,0,0.25)] transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-[-3px_8px_7px_0px_rgba(0,0,0,0.22)] focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ink motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+          // Fall into place in turn, after the places
+          style={{ animationDelay: `${(10 + i) * DROP_STEP}ms` }}
+          className="relative h-[138.49px] w-[107.61px] animate-drop-in cursor-pointer rounded-[6px] shadow-[-3px_3px_2px_0px_rgba(0,0,0,0.25)] transition-[translate,box-shadow] duration-200 ease-out hover:-translate-y-1 hover:shadow-[-3px_8px_7px_0px_rgba(0,0,0,0.22)] focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ink motion-reduce:animate-none motion-reduce:transition-none motion-reduce:hover:translate-y-0"
         >
           <MiniCharacterCard id={id} />
         </button>
@@ -158,8 +191,36 @@ export function PhoneCharacterCards({ onOpen }: { onOpen: (id: CharacterId) => v
   )
 }
 
+/**
+ * Explore mode's "places": the six map stars' photos as little postcards in
+ * a row you swipe sideways. The map's stars are small to tap on a phone, so
+ * this is the easy way in; both open the same photo.
+ */
+export function PhonePlaces({ onOpen }: { onOpen: (id: MapStarId) => void }) {
+  return (
+    <section aria-label="Places" className="w-full">
+      <StripLabel swipe>places</StripLabel>
+      <div className="mt-[7px] flex snap-x snap-mandatory scroll-px-[16px] gap-[14px] overflow-x-auto px-[16px] pt-[8px] pb-[14px] [scrollbar-width:none]">
+        {MAP_STARS.map((star, i) => (
+          <PlacePostcard key={star.id} star={star.id} name={star.name} index={i} firstDrop={4} width={124} photoHeight={84} onOpen={onOpen} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Players strip
+
+/** A small italic label over a row ("players", "places"), with "swipe →" when the row scrolls sideways. */
+export function StripLabel({ children, swipe = false }: { children: string; swipe?: boolean }) {
+  return (
+    <div className="flex justify-between px-[18px] font-mono text-[12px] leading-none text-ink-soft italic">
+      <span>{children}</span>
+      {swipe && <span aria-hidden="true">swipe →</span>}
+    </div>
+  )
+}
 
 const STRIP_TOKEN = 16
 
@@ -199,10 +260,7 @@ export function PlayersStrip({ players, spent, onCharacter, onCityBank }: Player
   const card = 'relative shrink-0 snap-start rounded-[7px] border border-black bg-cream text-left'
   return (
     <section aria-label="Players" className="w-full">
-      <div className="flex justify-between px-[18px] font-mono text-[12px] leading-none text-ink-soft italic">
-        <span>players</span>
-        <span aria-hidden="true">swipe →</span>
-      </div>
+      <StripLabel swipe>players</StripLabel>
       {/* Scrolls sideways; snap: a swipe stops with a card at the left edge.
           The padding leaves room for the cards' lift and shadow. */}
       <div className="mt-[7px] flex snap-x snap-mandatory scroll-px-[16px] gap-[17px] overflow-x-auto px-[16px] pt-[6px] pb-[14px] [scrollbar-width:none]">
@@ -216,7 +274,9 @@ export function PlayersStrip({ players, spent, onCharacter, onCityBank }: Player
               onClick={onCharacter ? () => onCharacter(p.character) : undefined}
               disabled={!onCharacter}
               aria-label={`Player ${p.number}, ${getCharacter(p.character).name}. Tokens left: ${describeTokens(have)}.${onCharacter ? ' Open their card.' : ''}`}
-              className={`${card} flex h-[100px] w-[120px] items-start gap-[11px] pt-[18px] pl-[12px] drop-shadow-[0px_3px_2px_rgba(0,0,0,0.15)] ${onCharacter ? LIFT : ''}`}
+              // The player cards fall into place in turn, after the tracker
+              style={{ animationDelay: `${(4 + p.number) * DROP_STEP}ms` }}
+              className={`${card} flex h-[100px] w-[120px] animate-drop-in items-start gap-[11px] pt-[18px] pl-[12px] drop-shadow-[0px_3px_2px_rgba(0,0,0,0.15)] motion-reduce:animate-none ${onCharacter ? LIFT : ''}`}
             >
               <span className="relative size-[53px] shrink-0">
                 <CharacterToken id={p.character} className="origin-top-left scale-[1.06]" />
@@ -240,7 +300,8 @@ export function PlayersStrip({ players, spent, onCharacter, onCityBank }: Player
                 onClick={onCityBank}
                 disabled={!onCityBank}
                 aria-label={`City bank. Tokens left: ${describeTokens(have)}.${onCityBank ? ' What is it?' : ''}`}
-                className={`${card} flex min-h-[100px] min-w-[166px] flex-col gap-[6px] px-[10px] pt-[8px] pb-[10px] drop-shadow-[0px_3px_2px_rgba(0,0,0,0.15)] ${onCityBank ? LIFT : ''}`}
+                style={{ animationDelay: `${(5 + players.length) * DROP_STEP}ms` }}
+                className={`${card} flex min-h-[100px] min-w-[166px] animate-drop-in flex-col gap-[6px] px-[10px] pt-[8px] pb-[10px] drop-shadow-[0px_3px_2px_rgba(0,0,0,0.15)] motion-reduce:animate-none ${onCityBank ? LIFT : ''}`}
               >
                 <span className="font-mono text-[14px] leading-none text-ink italic">city bank</span>
                 {/* A row per type: the pool can hold many tokens */}

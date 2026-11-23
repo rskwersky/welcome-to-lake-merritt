@@ -167,10 +167,10 @@ scripts/
   so add the deploy domain there. *Dancing Script* shows if it can't load.
 - **Phones:** the game overview, character select, tutorial, game board and explore
   mode have phone layouts (Figma "6b · mobile hi-fi", M1 to M8). Still shrunk to fit on
-  phones: the landing postcard, how to play and player
-  count, which have no phone designs yet. On phones, explore mode has no big manual
-  ("learn more" opens the history page), and the end cards are the desktop ones,
-  shrunk. The history page is fully responsive.
+  phones: the landing postcard and how to play, which have no phone designs yet.
+  Player count has a phone layout too (the postcard upright, bigger buttons). On phones the manual is a scrolling sheet
+  ("how to play", in the menu and in explore mode), and the end cards are the desktop
+  ones, shrunk, with full-size buttons. The history page is fully responsive.
 
 ## Deploy
 
